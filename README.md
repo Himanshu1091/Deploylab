@@ -1,0 +1,77 @@
+# Deploylab
+
+A deliberately small MERN application whose real purpose is **learning end-to-end deployment**.
+
+The app itself is an RBAC dashboard shell: users log in, and what they see depends on their role. There is no deep business logic on purpose — the interesting problems live in the deployment pipeline, not the feature set.
+
+## Why this exists
+
+Most tutorials teach you to build an app and stop at `npm run dev`. This repo goes the other way: build the smallest credible app that still has the things that break in production (auth cookies, environment variables, build artifacts, a database over the network, a reverse proxy), then deploy it properly and document every step.
+
+## Stack
+
+| Layer | Choice |
+|---|---|
+| Frontend | React 19 + Vite + React Router + Axios |
+| Backend | Node 24 + Express 5 |
+| Database | MongoDB Atlas (M0 free tier) via Mongoose |
+| Auth | JWT in an httpOnly cookie |
+| Process manager | pm2 |
+| Reverse proxy | nginx |
+| CI/CD | GitHub Actions |
+
+## Roles
+
+| Role | Can see |
+|---|---|
+| `admin` | All users, can change any user's role and activation status |
+| `manager` | Own profile plus a read-only list of their direct reports |
+| `employee` | Own profile only |
+
+## Repo layout
+
+```
+deploylab/
+├── client/          React app (Vite)
+├── server/          Express API
+├── docs/            SRS, FRD, architecture, plan, API spec, deploy runbook
+└── README.md
+```
+
+## Documentation
+
+| Document | What it covers |
+|---|---|
+| [SRS.md](docs/SRS.md) | Scope, functional and non-functional requirements, constraints |
+| [FRD.md](docs/FRD.md) | Screen-by-screen behaviour, validation rules, acceptance criteria |
+| [ARCHITECTURE.md](docs/ARCHITECTURE.md) | System topology, data model, auth flow, dev vs prod differences |
+| [API_SPEC.md](docs/API_SPEC.md) | Every endpoint, request/response shapes, status codes |
+| [IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md) | Phase-by-phase checklist from empty folder to live HTTPS site |
+| [DEPLOYMENT.md](docs/DEPLOYMENT.md) | The runbook — filled in as each deployment phase is completed |
+
+## Getting started
+
+**1. Create the Atlas cluster** (one-time, manual)
+
+M0 free tier, region `ap-south-1`. Create a database user, allow `0.0.0.0/0` under Network Access for now, then copy the connection string from Connect → Drivers.
+
+**2. Configure the backend**
+
+`server/.env` already exists with a generated `JWT_SECRET`. Paste the Atlas string into `MONGODB_URI`, remembering to substitute the real password and to add `/deploylab` before the query string:
+
+```
+mongodb+srv://user:realpassword@cluster0.xxxxx.mongodb.net/deploylab?retryWrites=true&w=majority
+```
+
+**3. Run both workspaces** — two terminals
+
+```bash
+cd server && npm run dev     # http://localhost:5000
+cd client && npm run dev     # http://localhost:5173
+```
+
+Open `http://localhost:5173`. The boot page reports API and database status; both green means the plumbing is sound.
+
+## Status
+
+Phases 0–2 complete: documentation, scaffolding, and backend foundation. `/api/health` is live and the client boot page verifies end-to-end connectivity. Next: Phase 3 — the `User` model and seed script.

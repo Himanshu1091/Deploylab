@@ -1,8 +1,8 @@
 {
-  "name": "deploylab-server",
+  "name": "deploylab-backend",
   "version": "1.0.0",
   "private": true,
-  "description": "Deploylab API — Express + Mongoose RBAC backend",
+  "description": "Deploylab API â€” Express + Mongoose RBAC backend",
   "type": "module",
   "main": "src/server.js",
   "engines": {

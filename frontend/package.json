@@ -1,8 +1,8 @@
 {
-  "name": "deploylab-client",
+  "name": "deploylab-frontend",
   "version": "1.0.0",
   "private": true,
-  "description": "Deploylab web client — React + Vite",
+  "description": "Deploylab web client â€” React + Vite",
   "type": "module",
   "scripts": {
     "dev": "vite",

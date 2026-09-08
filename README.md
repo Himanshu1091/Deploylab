@@ -32,8 +32,8 @@ Most tutorials teach you to build an app and stop at `npm run dev`. This repo go
 
 ```
 deploylab/
-├── client/          React app (Vite)
-├── server/          Express API
+├── frontend/        React app (Vite)
+├── backend/         Express API
 ├── docs/            SRS, FRD, architecture, plan, API spec, deploy runbook
 └── README.md
 ```
@@ -57,7 +57,7 @@ M0 free tier, region `ap-south-1`. Create a database user, allow `0.0.0.0/0` und
 
 **2. Configure the backend**
 
-`server/.env` already exists with a generated `JWT_SECRET`. Paste the Atlas string into `MONGODB_URI`, remembering to substitute the real password and to add `/deploylab` before the query string:
+`backend/.env` already exists with a generated `JWT_SECRET`. Paste the Atlas string into `MONGODB_URI`, remembering to substitute the real password and to add `/deploylab` before the query string:
 
 ```
 mongodb+srv://user:realpassword@cluster0.xxxxx.mongodb.net/deploylab?retryWrites=true&w=majority
@@ -66,8 +66,8 @@ mongodb+srv://user:realpassword@cluster0.xxxxx.mongodb.net/deploylab?retryWrites
 **3. Run both workspaces** — two terminals
 
 ```bash
-cd server && npm run dev     # http://localhost:5000
-cd client && npm run dev     # http://localhost:5173
+cd backend  && npm run dev   # http://localhost:5000
+cd frontend && npm run dev   # http://localhost:5173
 ```
 
 Open `http://localhost:5173`. The boot page reports API and database status; both green means the plumbing is sound.

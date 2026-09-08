@@ -31,7 +31,7 @@ graph LR
         N["nginx :80 / :443<br/>TLS termination<br/>static files + reverse proxy"]
         P["pm2"]
         A["Node / Express :5000<br/>127.0.0.1 only"]
-        S[("client/dist<br/>static bundle")]
+        S[("frontend/dist<br/>static bundle")]
         N -.serves.-> S
         P -.supervises.-> A
         N -->|"proxy /api/*"| A
@@ -47,8 +47,8 @@ graph LR
 
 | Request | Route |
 |---|---|
-| `GET /` | nginx → `client/dist/index.html` |
-| `GET /assets/index-abc123.js` | nginx → `client/dist/assets/…`, cached one year (hashed filename) |
+| `GET /` | nginx → `frontend/dist/index.html` |
+| `GET /assets/index-abc123.js` | nginx → `frontend/dist/assets/…`, cached one year (hashed filename) |
 | `GET /profile` | nginx → `index.html` — SPA fallback, React Router takes over |
 | `POST /api/auth/login` | nginx → `http://127.0.0.1:5000/api/auth/login` |
 
@@ -88,7 +88,7 @@ Vite's dev-server proxy forwards `/api` to Express, so the browser still sees a 
 ## 4. Backend Structure
 
 ```
-server/
+backend/
 ├── src/
 │   ├── config/
 │   │   ├── env.js            Validates and exports environment variables
@@ -172,7 +172,7 @@ Express 5 forwards rejected promises from async handlers to error middleware on 
 ## 5. Frontend Structure
 
 ```
-client/
+frontend/
 ├── src/
 │   ├── api/
 │   │   ├── client.js          Axios instance, withCredentials, 401 interceptor
@@ -327,7 +327,7 @@ The JWT alone would be enough to identify the user, and skipping the lookup woul
 
 ## 8. Configuration
 
-### Server (`server/.env`)
+### Backend (`backend/.env`)
 
 | Variable | Example | Notes |
 |---|---|---|
@@ -342,7 +342,7 @@ The JWT alone would be enough to identify the user, and skipping the lookup woul
 
 `config/env.js` validates these at startup and exits with a clear message if any is missing. Failing fast at boot beats a `jwt malformed` error appearing during the first login attempt on a fresh server.
 
-### Client (`client/.env`)
+### Frontend (`frontend/.env`)
 
 | Variable | Development | Production |
 |---|---|---|

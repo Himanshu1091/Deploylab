@@ -29,7 +29,7 @@ app.use(morgan(env.isProd ? 'combined' : 'dev'));
 
 app.use('/api', routes);
 
-// Phase 8 adds static serving of client/dist plus the SPA fallback here.
+// Phase 8 adds static serving of frontend/dist plus the SPA fallback here.
 
 app.use(notFound);
 app.use(errorHandler);

@@ -50,7 +50,7 @@ _Phase 9._
 
 ## 3. Environment Variables
 
-Never commit `server/.env`. Create it directly on the server.
+Never commit `backend/.env`. Create it directly on the server.
 
 | Variable | Where the value comes from |
 |---|---|

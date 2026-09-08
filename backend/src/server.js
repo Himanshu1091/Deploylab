@@ -14,7 +14,7 @@ async function start() {
   const host = env.isProd ? '127.0.0.1' : '0.0.0.0';
 
   server = app.listen(env.PORT, host, () => {
-    console.log(`[server] ${env.NODE_ENV} — listening on http://${host}:${env.PORT}`);
+    console.log(`[server] ${env.NODE_ENV} - listening on http://${host}:${env.PORT}`);
     console.log(`[server] health: http://localhost:${env.PORT}/api/health`);
   });
 }
@@ -24,10 +24,10 @@ async function start() {
  * drops whatever was mid-flight at that moment.
  */
 async function shutdown(signal) {
-  console.log(`\n[server] ${signal} received — shutting down`);
+  console.log(`\n[server] ${signal} received - shutting down`);
 
   const forceExit = setTimeout(() => {
-    console.error('[server] graceful shutdown timed out — forcing exit');
+    console.error('[server] graceful shutdown timed out - forcing exit');
     process.exit(1);
   }, SHUTDOWN_TIMEOUT_MS);
   forceExit.unref();

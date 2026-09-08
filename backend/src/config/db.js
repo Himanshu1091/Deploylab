@@ -16,7 +16,9 @@ export async function connectDB({ retries = 5, delayMs = 2000 } = {}) {
       await mongoose.connect(env.MONGODB_URI, {
         serverSelectionTimeoutMS: 10000,
       });
-      console.log(`[db] connected — database "${mongoose.connection.name}"`);
+      // ASCII only in log output: Windows consoles default to a codepage that
+      // mangles em dashes, and these lines are read constantly during dev.
+      console.log(`[db] connected - database "${mongoose.connection.name}"`);
       return mongoose.connection;
     } catch (err) {
       const isLastAttempt = attempt === retries;

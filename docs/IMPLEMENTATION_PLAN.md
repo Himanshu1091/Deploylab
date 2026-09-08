@@ -47,17 +47,17 @@ Tick boxes as work completes. Phases 1–8 build the application; phases 9–14 
 
 - [x] `git init` at the project root
 - [x] Write root `.gitignore` — `node_modules`, `.env`, `dist`, `*.log`, `.DS_Store`
-- [ ] Create the Atlas M0 cluster (region `ap-south-1`) — *manual step*
-- [ ] Create the Atlas database user and record the password — *manual step*
-- [ ] Allow `0.0.0.0/0` in Atlas Network Access, to be narrowed in Phase 9 — *manual step*
-- [ ] Paste the connection string into `server/.env` — *manual step*
-- [x] Scaffold `server/` — dependencies installed, folder tree created
-- [x] Scaffold `client/` — Vite + React, dependencies installed
-- [x] Write `server/.env.example` and `client/.env.example`
-- [x] Generate `JWT_SECRET` into `server/.env`
+- [x] Create the Atlas M0 cluster
+- [x] Create the Atlas database user and record the password
+- [x] Allow `0.0.0.0/0` in Atlas Network Access, to be narrowed in Phase 9
+- [x] Paste the connection string into `backend/.env`
+- [x] Scaffold `backend/` — dependencies installed, folder tree created
+- [x] Scaffold `frontend/` — Vite + React, dependencies installed
+- [x] Write `backend/.env.example` and `frontend/.env.example`
+- [x] Generate `JWT_SECRET` into `backend/.env`
 - [x] First commit
 - [x] Add the GitHub remote — `Himanshu1091/Deploylab`
-- [x] `.github/workflows/ci.yml` — client build plus a server smoke test against a MongoDB service container
+- [x] `.github/workflows/ci.yml` — frontend build plus a backend smoke test against a MongoDB service container
 - [x] Branch-and-PR workflow adopted; `main` stays protected from direct pushes
 
 **Installed versions:** Express 5.2, Mongoose 9.9, Zod 4.5, React 19.2, Vite 6.4, Node 24.11.
@@ -84,7 +84,11 @@ Tick boxes as work completes. Phases 1–8 build the application; phases 9–14 
 
 **Done when:** `npm run dev` prints a listening message, `/api/health` returns `db: "connected"`, and `Ctrl+C` shuts down cleanly rather than dying mid-request.
 
-**Verified so far:** env validation correctly refuses to boot with an empty `MONGODB_URI`. The connected path is pending the Atlas string.
+**Verified:**
+
+- Env validation refuses to boot with a missing `MONGODB_URI`, naming the variable
+- Boots against Atlas — `[db] connected - database "Deploylab"`
+- `GET /api/health` returns `200 {"status":"ok","db":"connected",…}`
 
 ---
 
@@ -210,8 +214,8 @@ Tick boxes as work completes. Phases 1–8 build the application; phases 9–14 
 - [ ] Helmet configured, with CSP tuned so the built bundle loads
 - [ ] Production error handler — no stack traces in responses
 - [ ] Every environment variable documented in both `.env.example` files
-- [ ] `client` build script produces `client/dist`
-- [ ] Express serves `client/dist` statically when `NODE_ENV=production`
+- [ ] `frontend` build script produces `frontend/dist`
+- [ ] Express serves `frontend/dist` statically when `NODE_ENV=production`
 - [ ] SPA fallback in Express — any non-`/api` path returns `index.html`
 - [ ] `npm run build` at the root builds the client
 - [ ] Bundle size checked against NFR-02 (300 KB gzipped)
@@ -238,7 +242,7 @@ This phase is the rehearsal. Anything broken here will be far harder to diagnose
 - [ ] Install git
 - [ ] Install pm2 globally
 - [ ] Clone the repository
-- [ ] Create `server/.env` on the server — never committed, never copied from a chat window
+- [ ] Create `backend/.env` on the server — never committed, never copied from a chat window
 - [ ] `npm ci` in both workspaces
 - [ ] Build the client
 - [ ] Start under pm2, named `deploylab`
@@ -258,7 +262,7 @@ This phase is the rehearsal. Anything broken here will be far harder to diagnose
 
 - [ ] Install nginx
 - [ ] Write the site config in `/etc/nginx/sites-available/deploylab`
-- [ ] `location /` → `try_files $uri $uri/ /index.html` against `client/dist`
+- [ ] `location /` → `try_files $uri $uri/ /index.html` against `frontend/dist`
 - [ ] `location /api` → `proxy_pass http://127.0.0.1:5000`
 - [ ] Forward `X-Real-IP`, `X-Forwarded-For`, `X-Forwarded-Proto`, and `Host`
 - [ ] Enable gzip
@@ -308,7 +312,7 @@ CI already exists from Phase 1 — `.github/workflows/ci.yml` builds the client 
 - [ ] Generate a deploy SSH key pair; the public key goes in the server's `authorized_keys`
 - [ ] Add GitHub Actions secrets — `SSH_HOST`, `SSH_USER`, `SSH_PRIVATE_KEY`
 - [ ] Write `.github/workflows/deploy.yml`
-- [ ] Workflow steps: checkout, SSH in, `git pull`, `npm ci`, build client, `pm2 reload deploylab`
+- [ ] Workflow steps: checkout, SSH in, `git pull`, `npm ci`, build frontend, `pm2 reload deploylab`
 - [ ] Post-deploy smoke test — curl `/api/health` and fail the job on a non-200
 - [ ] Trigger a deployment with a trivial commit and watch it run
 - [ ] Verify zero-downtime by curling in a loop during a reload
@@ -324,10 +328,10 @@ CI already exists from Phase 1 — `.github/workflows/ci.yml` builds the client 
 
 **Goal:** the same application, containerised.
 
-- [ ] `server/Dockerfile` — multi-stage, non-root user
-- [ ] `client/Dockerfile` — build stage plus an nginx serve stage
+- [ ] `backend/Dockerfile` — multi-stage, non-root user
+- [ ] `frontend/Dockerfile` — build stage plus an nginx serve stage
 - [ ] `.dockerignore` files
-- [ ] `docker-compose.yml` wiring client, server, and a local mongo service
+- [ ] `docker-compose.yml` wiring frontend, backend, and a local mongo service
 - [ ] Named volume for mongo data
 - [ ] Environment variables passed through compose
 - [ ] Run the whole stack locally with `docker compose up`
@@ -359,6 +363,10 @@ Record dated entries here as work proceeds. The mistakes are the actual curricul
 | 2026-09-08 | 0 | Documentation complete. Host choice deferred to Phase 9. |
 | 2026-09-08 | 2 | Dropped `asyncHandler` — Express 5 forwards async rejections natively. Plan and architecture updated. |
 | 2026-09-08 | 2 | Client baseline bundle: 80.86 KB gzipped, against a 300 KB budget. Plenty of headroom. |
-| 2026-09-08 | 1 | Blocked on the Atlas connection string before the DB path can be verified. |
+| 2026-09-08 | 2 | Atlas connected. First failure was a key-name mismatch: `.env` had `MONGO_URI`, the schema expects `MONGODB_URI`. Zod named the exact variable, which is precisely why validation runs at startup. |
+| 2026-09-08 | 2 | Database name in the connection string is `Deploylab`, capitalised. MongoDB database names are case-sensitive, so this must match everywhere — including the CI service-container URI and the production `.env`. Lowercase would be more conventional; left as-is for now. |
+| 2026-09-08 | 2 | Log lines use ASCII hyphens, not em dashes. Windows consoles mangle them into `â€"`. |
 | 2026-09-08 | 1 | CI pulled forward from Phase 12. Running the build and a real boot check on every PR from day one is cheaper than retrofitting it once the code is large. Phase 12 now covers deployment only. |
 | 2026-09-08 | 1 | Remote repo was empty, so `main` was seeded with a bare initial commit to give pull requests a base branch. |
+| 2026-09-08 | 1 | Renamed `client/` → `frontend/` and `server/` → `backend/`. "Server" was doing double duty as both a directory name and the deployment host, which will only get more confusing from Phase 9 onward. |
+| 2026-09-08 | 1 | Windows gotcha: PowerShell 5.1's `Set-Content -Encoding utf8` writes a BOM. Vite rejected `package.json` as invalid JSON because of it. Use `[System.IO.File]::WriteAllText` with `UTF8Encoding($false)` when writing JSON or `.env` files on Windows. |

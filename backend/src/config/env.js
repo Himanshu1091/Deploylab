@@ -36,7 +36,7 @@ if (!parsed.success) {
   for (const issue of parsed.error.issues) {
     console.error(`   - ${issue.path.join('.')}: ${issue.message}`);
   }
-  console.error('\n  Copy server/.env.example to server/.env and fill in the values.\n');
+  console.error('\n  Copy backend/.env.example to backend/.env and fill in the values.\n');
   process.exit(1);
 }
 

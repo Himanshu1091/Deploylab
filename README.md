@@ -72,6 +72,21 @@ cd frontend && npm run dev   # http://localhost:5173
 
 Open `http://localhost:5173`. The boot page reports API and database status; both green means the plumbing is sound.
 
+**4. Seed test accounts**
+
+```bash
+cd backend && npm run seed          # idempotent — safe to re-run
+cd backend && npm run seed -- --reset   # wipe users first, then recreate
+```
+
+Creates one account per role. Passwords come from `SEED_*` in `backend/.env`.
+
+| Role | Email |
+|---|---|
+| admin | `admin@deploylab.local` |
+| manager | `manager@deploylab.local` |
+| employee | `employee@deploylab.local` |
+
 ## Status
 
-Phases 0–2 complete: documentation, scaffolding, and backend foundation. `/api/health` is live and the client boot page verifies end-to-end connectivity. Next: Phase 3 — the `User` model and seed script.
+Phases 0–3 complete: documentation, scaffolding, backend foundation, and the data model. `/api/health` is live, the frontend boot page verifies end-to-end connectivity, and the `users` collection is seeded with one account per role. Next: Phase 4 — authentication.

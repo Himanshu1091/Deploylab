@@ -240,6 +240,14 @@ Only one collection. Everything RBAC needs fits in it.
 
 `select: false` on `passwordHash` means every query omits it unless explicitly requested. Requirement NFR-08 — never leak the hash — becomes the default rather than something to remember at each call site.
 
+### Password handling
+
+The schema exposes a write-only `password` virtual. Assigning to it stashes the plaintext on the document; a `pre('validate')` hook replaces it with a bcrypt hash. There is no getter, so plaintext can never be read back off a document.
+
+Hashing runs on `validate` rather than `save` because Mongoose validates before save hooks fire. A `pre('save')` hook would run *after* `passwordHash` had already been checked as required, which would force the field to be populated with plaintext first purely to pass validation. Hashing during validation means the plaintext never occupies the field at all.
+
+`comparePassword` requires the document to have been loaded with `.select('+passwordHash')`. It returns `false` rather than throwing when the hash is absent, so a caller who forgets the select gets a failed login instead of a 500.
+
 ### Indexes
 
 | Index | Purpose |

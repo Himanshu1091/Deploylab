@@ -4,7 +4,7 @@
 |---|---|
 | Version | 1.0 |
 | Started | 2026-09-08 |
-| Current phase | Phase 3 |
+| Current phase | Phase 4 |
 
 Tick boxes as work completes. Phases 1–8 build the application; phases 9–14 are the actual point of the project.
 
@@ -13,7 +13,7 @@ Tick boxes as work completes. Phases 1–8 build the application; phases 9–14 
 - [x] Phase 0 — Documentation
 - [x] Phase 1 — Repository and tooling
 - [x] Phase 2 — Backend foundation
-- [ ] Phase 3 — Data model and seeding
+- [x] Phase 3 — Data model and seeding
 - [ ] Phase 4 — Authentication
 - [ ] Phase 5 — RBAC and user management
 - [ ] Phase 6 — Frontend foundation
@@ -92,20 +92,45 @@ Tick boxes as work completes. Phases 1–8 build the application; phases 9–14 
 
 ---
 
-## Phase 3 — Data Model and Seeding
+## Phase 3 — Data Model and Seeding ✅
 
 **Goal:** the `users` collection exists with three test accounts.
 
-- [ ] `src/models/User.js` — full schema per ARCHITECTURE §6
-- [ ] `passwordHash` marked `select: false`
-- [ ] Pre-save hook hashing the password with bcrypt cost 12
-- [ ] Instance method `comparePassword`
-- [ ] Indexes on `email` (unique), `managerId`, `role`
-- [ ] `toJSON` transform — expose `id`, strip `_id`, `__v`, and `passwordHash`
-- [ ] `scripts/seed.js` creating one admin, one manager, one employee, with the employee assigned to the manager
-- [ ] `npm run seed` script
+- [x] `src/models/User.js` — full schema per ARCHITECTURE §6
+- [x] `passwordHash` marked `select: false`
+- [x] Write-only `password` virtual, hashed with bcrypt cost 12 on `pre('validate')` — **not** `pre('save')`, see note below
+- [x] Instance method `comparePassword`
+- [x] Static `findByEmail`, with an opt-in `withPassword` select
+- [x] Indexes on `email` (unique), `managerId`, `role`
+- [x] `toJSON` transform — expose `id`, strip `_id`, `__v`, and `passwordHash`
+- [x] `scripts/seed.js` creating one admin, one manager, one employee, with the employee assigned to the manager
+- [x] `npm run seed` script, plus `npm run seed -- --reset`
 
 **Done when:** seeding produces exactly three users in Atlas, re-running it does not duplicate them, and no document leaks a plaintext password.
+
+**Verified — 20 checks, all passing**
+
+| Area | Result |
+|---|---|
+| `toJSON` hides `passwordHash`, exposes `id`, drops `_id` and `__v` | pass |
+| Default query omits the hash; `select('+passwordHash')` returns it | pass |
+| Stored value is a real bcrypt cost-12 hash (`$2b$12$…`), not plaintext | pass |
+| `comparePassword` accepts the right password, rejects a wrong one, returns false when the hash was not selected | pass |
+| `findByEmail` is case-insensitive | pass |
+| Duplicate email rejected by the database with `11000` | pass |
+| Password shorter than 8 characters rejected with a readable message | pass |
+| Role outside the enum rejected | pass |
+| Seeded employee is linked to the seeded manager | pass |
+| All three indexes present in MongoDB | pass |
+| Re-running the seed skips all three and leaves the count at 3 | pass |
+
+**Seed accounts** — passwords live in `backend/.env` under `SEED_*`.
+
+| Role | Email | Name |
+|---|---|---|
+| admin | `admin@deploylab.local` | Aarti Deshpande |
+| manager | `manager@deploylab.local` | Rahul Verma |
+| employee | `employee@deploylab.local` | Priya Sharma — reports to Rahul |
 
 ---
 
@@ -361,6 +386,9 @@ Record dated entries here as work proceeds. The mistakes are the actual curricul
 | Date | Phase | Note |
 |---|---|---|
 | 2026-09-08 | 0 | Documentation complete. Host choice deferred to Phase 9. |
+| 2026-09-08 | 3 | Mongoose 9 does not pass `next` to an `async` hook function. The first seed run died on `next is not a function`. Async hooks signal failure by throwing or, for validation, by calling `this.invalidate(path, message)`. |
+| 2026-09-08 | 3 | Hashing moved from `pre('save')` to `pre('validate')`. Mongoose validates before save hooks run, so a save hook fires after `required` has already been checked, which would force the field to hold plaintext just to pass validation. |
+| 2026-09-08 | 3 | Uniqueness is enforced by the database index (error `11000`), not only by an application-level existence check. Two simultaneous registrations of the same email would both pass a `findOne` check; only the index actually stops the second write. |
 | 2026-09-08 | 2 | Dropped `asyncHandler` — Express 5 forwards async rejections natively. Plan and architecture updated. |
 | 2026-09-08 | 2 | Client baseline bundle: 80.86 KB gzipped, against a 300 KB budget. Plenty of headroom. |
 | 2026-09-08 | 2 | Atlas connected. First failure was a key-name mismatch: `.env` had `MONGO_URI`, the schema expects `MONGODB_URI`. Zod named the exact variable, which is precisely why validation runs at startup. |

@@ -1,0 +1,121 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+# A new push to the same branch cancels the run already in flight — no point
+# paying for CI on a commit that has already been superseded.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  frontend:
+    name: Frontend build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      # `npm ci` not `npm install`: it installs exactly what the lockfile pins
+      # and fails if package.json and the lockfile disagree.
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Report bundle size
+        run: |
+          echo "### Frontend bundle" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          ls -lh dist/assets >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+
+  backend:
+    name: Backend smoke test
+    runs-on: ubuntu-latest
+
+    # A throwaway MongoDB for the duration of the job. Atlas credentials never
+    # touch CI — the smoke test only needs *a* database, not *the* database.
+    services:
+      mongo:
+        image: mongo:7
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --quiet --eval 'db.adminCommand({ ping: 1 })'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Boots the real server against the real driver and asserts the health
+      # endpoint reports a live database. This catches the failures that matter
+      # at this stage: a bad import path, a broken env schema, a driver that
+      # cannot connect. Cheap, and it fails loudly.
+      - name: Boot API and verify health
+        env:
+          NODE_ENV: development
+          PORT: 5000
+          MONGODB_URI: mongodb://localhost:27017/deploylab_ci
+          JWT_SECRET: ci-only-secret-never-used-outside-github-actions-0123456789
+        run: |
+          set -euo pipefail
+
+          node src/server.js &
+          API_PID=$!
+
+          for _ in $(seq 1 30); do
+            if curl -sf http://localhost:5000/api/health > /dev/null 2>&1; then
+              break
+            fi
+            sleep 1
+          done
+
+          if ! body=$(curl -sf http://localhost:5000/api/health); then
+            echo "::error::API never became reachable on port 5000"
+            kill "$API_PID" 2>/dev/null || true
+            exit 1
+          fi
+
+          echo "Health response: $body"
+
+          if ! echo "$body" | grep -q '"db":"connected"'; then
+            echo "::error::Health endpoint reports the database is not connected"
+            kill "$API_PID" 2>/dev/null || true
+            exit 1
+          fi
+
+          # SIGTERM rather than SIGKILL, so the graceful shutdown path is
+          # exercised on every CI run instead of only in production.
+          kill -TERM "$API_PID"
+          wait "$API_PID" || true
+          echo "Graceful shutdown completed"

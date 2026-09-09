@@ -106,9 +106,9 @@ Note that `NODE_ENV=production` makes the session cookie `Secure`, which browser
 
 ## Status
 
-Phases 0–7 complete. **The application is feature-complete for v1.0** — every screen in the FRD is built and every endpoint enforces its role on the server.
+Phases 0–8 complete. The application is feature-complete for v1.0, hardened, and verified running as a single production process serving both the API and the built frontend.
 
-Next: Phase 8 — hardening and the production build, then the deployment phases this project exists for.
+Now in the deployment phases this project exists for. Target is **AWS EC2**, Ubuntu 24.04 — see [DEPLOYMENT.md](docs/DEPLOYMENT.md) for the full runbook, starting from an empty AWS account.
 
 Sign in with any seeded account to see the role-appropriate experience.
 

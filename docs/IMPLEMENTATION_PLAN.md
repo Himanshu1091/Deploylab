@@ -318,29 +318,68 @@ This phase is the rehearsal. Anything broken here will be far harder to diagnose
 
 **Goal:** the application runs on a real server, reachable by IP.
 
-- [ ] Choose the host — EC2 `t3.micro` or an equivalent VPS
+**Host: AWS EC2**, Ubuntu 24.04 LTS, micro instance. Full step-by-step commands
+live in [DEPLOYMENT.md](DEPLOYMENT.md); this is the checklist.
+
+- [x] `ecosystem.config.cjs` — pm2 process definition
+- [x] Runbook written covering every step below
+
+**Billing safety — before launching anything**
+
+- [ ] AWS account created
+- [ ] MFA on the root account; an IAM user for daily work
+- [ ] Zero-spend or low-threshold budget alert configured
+- [ ] Free tier usage alerts enabled
+- [ ] Read the free tier terms shown at signup — they changed during 2025, and a public IPv4 address is separately chargeable
+
+**Instance**
+
+- [ ] ed25519 key pair created and permissions fixed locally
+- [ ] Security group: 22 from **your IP only**, 80 and 443 open, 5000 closed
 - [ ] Launch Ubuntu 24.04 LTS
-- [ ] Create and store the SSH key pair
-- [ ] Security group / firewall: allow 22, 80, 443 only
-- [ ] SSH in and confirm access
+- [ ] Elastic IP allocated and associated
+- [ ] SSH in as `ubuntu` and confirm access
+
+**Server preparation**
+
 - [ ] `apt update && apt upgrade`
-- [ ] Create a non-root deploy user with sudo rights
-- [ ] Disable root SSH login and password authentication
+- [ ] **Add 2 GB swap** — do this before building anything
+- [ ] Create the `deploy` user with sudo rights and a copy of the SSH key
+- [ ] Verify SSH as `deploy` in a second terminal **before** hardening
+- [ ] Disable root SSH login and password authentication, checking `sshd_config.d/` too
+- [ ] `sudo sshd -t` before reloading
+- [ ] `ufw` allowing OpenSSH, 80, 443
+
+**Application**
+
 - [ ] Install Node.js 22 LTS via NodeSource
-- [ ] Install git
-- [ ] Install pm2 globally
+- [ ] Install git and pm2
 - [ ] Clone the repository
-- [ ] Create `backend/.env` on the server — never committed, never copied from a chat window
+- [ ] Create `backend/.env` on the server with a **freshly generated** `JWT_SECRET`
+- [ ] `chmod 600 backend/.env`
 - [ ] `npm ci` in both workspaces
-- [ ] Build the client
-- [ ] Start under pm2, named `deploylab`
-- [ ] `pm2 save` and `pm2 startup` for boot persistence
-- [ ] Narrow the Atlas IP allowlist to the server's public IP
-- [ ] Attach a static IP — Elastic IP on AWS — so the allowlist entry stays valid across reboots
+- [ ] Build the frontend
+- [ ] Narrow the Atlas allowlist to the Elastic IP — add the new rule before removing `0.0.0.0/0`
+- [ ] `pm2 start ecosystem.config.cjs`
+- [ ] Seed the accounts
+- [ ] `pm2 save` and `pm2 startup`, running the exact command pm2 prints
 
-**Done when:** `http://<server-ip>:5000/api/health` responds, the app survives `sudo reboot`, and `pm2 logs deploylab` shows clean startup.
+**Done when:** on the server, `curl localhost:5000/api/health` returns
+`db: "connected"` and `curl localhost:5000/` returns `200`; the same port is
+**unreachable** from your own machine; and all of it still holds after
+`sudo reboot`.
 
-**Expected snags:** Atlas rejecting the connection because the allowlist was narrowed to the wrong IP; a build running out of memory on 1 GB RAM — add swap if so.
+Note the correction: an earlier draft of this plan expected
+`http://<server-ip>:5000/api/health` to answer from outside. It cannot — Phase 8
+binds Express to `127.0.0.1` in production, and the security group leaves 5000
+shut. Verification is over SSH until nginx exists in Phase 10, and the port
+timing out from outside is itself one of the checks.
+
+**Expected snags:** the Vite build being killed with no error message, which is
+the OOM killer and means swap was skipped; Atlas rejecting the connection after
+the allowlist was narrowed to a mistyped address; `UNPROTECTED PRIVATE KEY FILE`
+from Windows file permissions on the `.pem`; `Permission denied (publickey)` from
+using the wrong username, since Ubuntu AMIs use `ubuntu` rather than `ec2-user`.
 
 ---
 
@@ -371,7 +410,7 @@ This phase is the rehearsal. Anything broken here will be far harder to diagnose
 
 **Goal:** a real domain served over HTTPS with automatic renewal.
 
-- [ ] Obtain a domain, or use a free subdomain
+- [ ] Use a free subdomain — DuckDNS, or an IP-based one like `sslip.io`. No domain is being bought for this project
 - [ ] `A` record pointing at the server IP
 - [ ] Wait for DNS propagation, verify with `dig`
 - [ ] Update `server_name` in the nginx config

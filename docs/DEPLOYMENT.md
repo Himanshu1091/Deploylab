@@ -18,7 +18,9 @@ Record real values in the table below as you go. Do not record secrets.
 | Item | Value |
 |---|---|
 | Provider | AWS EC2 |
-| Region | _fill in — pick the one closest to you_ |
+| AWS account | `376219458055` |
+| Plan | Free plan — $100 credits, expiring 2027-03-09 |
+| Region | **`ap-south-1` (Mumbai)** — chosen to match the Atlas cluster and to sit near the users |
 | Instance type | _t3.micro or t2.micro, whichever your account's free tier covers_ |
 | AMI | Ubuntu Server 24.04 LTS (64-bit x86) |
 | Elastic IP | _fill in_ |
@@ -38,6 +40,21 @@ free usage, bills by the hour, and will happily keep charging after any free
 allowance ends. The free tier terms changed materially during 2025, so confirm
 what your account actually gets on the signup page rather than trusting any
 tutorial — including this one.
+
+**This account is on the credits-based free plan**, not the older 12-month free
+tier: $100 of credits with a fixed expiry date, and usage draws them down rather
+than billing the card. The EC2 dashboard shows the remaining balance and days.
+
+That changes what to watch. The risk is not a surprise invoice, it is quietly
+burning the balance on something left running. A rough sense of the monthly draw
+for this setup — one micro instance, a small EBS volume, and one public IPv4
+address — is on the order of ten to fifteen dollars, varying by region and with
+whatever AWS currently charges. Over the life of the credits that leaves room for
+this project and not much else, so do not leave spare instances running.
+
+Check the balance on the EC2 dashboard periodically. When credits run out, an
+account on this plan is either suspended or converted to paid depending on the
+plan settings — worth knowing which, before it happens.
 
 Things that commonly cost money on an otherwise "free" setup:
 
@@ -61,6 +78,20 @@ the difference between noticing in a day and noticing on a statement.
 ---
 
 ## 1. Launch the Instance
+
+### 1.0 Pick the region first
+
+Set the region in the top-right dropdown **before creating anything**. Almost
+every EC2 resource is regional: a key pair, security group, or instance made in
+one region is simply invisible from another, and there is no move operation.
+
+Choose the region that matches **where the Atlas cluster lives**, then where the
+users are. Every request the app makes to the database pays the round trip
+between the two, several times per page. An app in Stockholm talking to a
+database in Mumbai adds well over a hundred milliseconds to each query, and no
+amount of application tuning recovers it.
+
+This deployment uses `ap-south-1` (Mumbai) for both.
 
 ### 1.1 Create the key pair
 

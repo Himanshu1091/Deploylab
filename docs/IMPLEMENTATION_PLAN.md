@@ -4,7 +4,7 @@
 |---|---|
 | Version | 1.0 |
 | Started | 2026-09-08 |
-| Current phase | Phase 5 |
+| Current phase | Phase 6 |
 
 Tick boxes as work completes. Phases 1–8 build the application; phases 9–14 are the actual point of the project.
 
@@ -15,7 +15,7 @@ Tick boxes as work completes. Phases 1–8 build the application; phases 9–14 
 - [x] Phase 2 — Backend foundation
 - [x] Phase 3 — Data model and seeding
 - [x] Phase 4 — Authentication
-- [ ] Phase 5 — RBAC and user management
+- [x] Phase 5 — RBAC and user management
 - [ ] Phase 6 — Frontend foundation
 - [ ] Phase 7 — Frontend screens
 - [ ] Phase 8 — Hardening and production build
@@ -168,28 +168,38 @@ Tick boxes as work completes. Phases 1–8 build the application; phases 9–14 
 
 ---
 
-## Phase 5 — RBAC and User Management
+## Phase 5 — RBAC and User Management ✅
 
 **Goal:** every endpoint from API_SPEC exists and enforces its role.
 
-- [ ] `src/middleware/requireRole.js` — factory accepting one or more roles
-- [ ] `src/services/user.service.js` — list, stats, change role, change status, assign manager, team
-- [ ] `PATCH /api/users/me`
-- [ ] `GET /api/users` with pagination, role filter, and search
-- [ ] `GET /api/users/stats`
-- [ ] `PATCH /api/users/:id/role` including the self-change guard
-- [ ] `PATCH /api/users/:id/status` including the self-deactivation guard
-- [ ] `PATCH /api/users/:id/manager` including the self-manager and role guards
-- [ ] `GET /api/users/team`
-- [ ] Route ordering checked — `/users/team` and `/users/stats` must be declared before `/users/:id`, or Express will match `team` as an id
+- [x] `src/middleware/requireRole.js` — factory accepting one or more roles
+- [x] `src/validators/user.schema.js` — Zod schemas for body, params, and query
+- [x] `src/services/user.service.js` — list, stats, change role, change status, assign manager, team
+- [x] `PATCH /api/users/me`
+- [x] `GET /api/users` with pagination, role filter, and search
+- [x] `GET /api/users/stats`
+- [x] `PATCH /api/users/:id/role` including the self-change guard
+- [x] `PATCH /api/users/:id/status` including the self-deactivation guard
+- [x] `PATCH /api/users/:id/manager` including the self-manager and role guards
+- [x] `GET /api/users/team`
+- [x] Route ordering checked — `/users/me`, `/users/stats`, and `/users/team` are declared before `/users/:id/*`
+- [x] Search terms escaped before compiling into a RegExp
 
-**Verify**
+**Verified end to end — 63 checks, all passing**
 
-- [ ] Employee calling `GET /api/users` receives `403`
-- [ ] Manager calling `GET /api/users` receives `403`
-- [ ] Admin changing their own role receives `400`
-- [ ] Manager's `/team` returns only their own reports
-- [ ] A manager with no reports receives `200` with an empty array, not `404`
+| Group | Covered |
+|---|---|
+| Role enforcement | `GET /users`: no session `401`, employee `403`, manager `403`, admin `200`. `GET /users/team`: employee `403`, admin `403`, manager `200`. Employee cannot change a role. A `403` body carries no data. |
+| Route ordering | `/users/stats` and `/users/team` resolve correctly rather than being captured as `:id` |
+| Listing | Users returned without `passwordHash`; defaults page 1 / limit 20; `limit` honoured; `pages` computed; role filter; search by name and by email; `page=0`, `limit=500`, and an unknown role all rejected `400` |
+| Regex safety | A search of `.+` returns zero results — metacharacters are escaped, not compiled |
+| Stats | `total`, `active + inactive === total`, and every role key present even at zero |
+| Self-protection | Admin cannot change own role (`SELF_ROLE_CHANGE`) or deactivate own account (`SELF_STATUS_CHANGE`); database confirms nothing changed |
+| Role changes | Promotion works; invalid role `400`; unknown id `404 USER_NOT_FOUND`; malformed ObjectId `400` |
+| Manager assignment | Self-assignment `SELF_MANAGER`; assigning a non-manager `NOT_A_MANAGER`; valid assignment populates `manager.name`; the manager's team then contains the user; `null` unassigns |
+| Own profile | Rename works; `role`, `isActive`, and `email` sent to `/users/me` are discarded and confirmed unchanged in the database; short name `400` |
+| Deactivation | Admin deactivates; the target's live session returns `401` on the next call; reactivation works; non-boolean `isActive` rejected |
+| Empty team | A manager with no reports gets `200` with an empty array and `count: 0`, not `404` |
 
 ---
 
@@ -409,3 +419,6 @@ Record dated entries here as work proceeds. The mistakes are the actual curricul
 | 2026-09-09 | 4 | Cookie `maxAge` is read back off the signed token's own `exp` claim rather than parsed separately from `JWT_EXPIRES_IN`. One source of truth, so cookie and token cannot expire at different times. |
 | 2026-09-09 | 4 | Zod 4 exposes `z.email()` at the top level; `z.string().email()` is the deprecated v3 form. |
 | 2026-09-09 | 4 | PowerShell 5.1 re-splits a here-string containing double quotes when passing it to a native exe, so `git commit -m` received the message as separate pathspecs. Use `git commit -F <file>` for any message with quotes. |
+| 2026-09-09 | 5 | Search terms are escaped before being compiled into a RegExp. Unescaped user input in a regex changes what the query matches (a `.` matching anything) and opens a denial-of-service path through catastrophic backtracking on input like `a+++++++b`. |
+| 2026-09-09 | 5 | `PATCH /users/me` relies on Zod's default behaviour of stripping unknown keys, so a client posting back a whole user object cannot alter its own role or status. Verified by sending `role: admin` and confirming the database was unchanged. |
+| 2026-09-09 | 5 | `getStats` seeds every role key at zero before merging the aggregation result. An aggregation only returns groups that exist, so a role with no members would otherwise be missing from the response and force the client to guard every read. |

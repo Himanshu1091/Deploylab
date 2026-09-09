@@ -4,7 +4,7 @@
 |---|---|
 | Version | 1.0 |
 | Started | 2026-09-08 |
-| Current phase | Phase 6 |
+| Current phase | Phase 7 |
 
 Tick boxes as work completes. Phases 1–8 build the application; phases 9–14 are the actual point of the project.
 
@@ -16,7 +16,7 @@ Tick boxes as work completes. Phases 1–8 build the application; phases 9–14 
 - [x] Phase 3 — Data model and seeding
 - [x] Phase 4 — Authentication
 - [x] Phase 5 — RBAC and user management
-- [ ] Phase 6 — Frontend foundation
+- [x] Phase 6 — Frontend foundation
 - [ ] Phase 7 — Frontend screens
 - [ ] Phase 8 — Hardening and production build
 - [ ] Phase 9 — Server provisioning
@@ -203,22 +203,36 @@ Tick boxes as work completes. Phases 1–8 build the application; phases 9–14 
 
 ---
 
-## Phase 6 — Frontend Foundation
+## Phase 6 — Frontend Foundation ✅
 
 **Goal:** the app shell renders, the session survives a refresh, and route guards work.
 
-- [ ] Vite proxy configured — `/api` to `http://localhost:5000`
-- [ ] React Router installed and the route table written
-- [ ] `src/api/client.js` — Axios instance with `withCredentials: true`
-- [ ] 401 response interceptor, with the startup `/me` call excluded
-- [ ] `src/context/AuthContext.jsx` — user, loading, login, register, logout, refresh
-- [ ] Initial `/me` call on mount, with a full-page loading state
-- [ ] `ProtectedRoute`, `GuestRoute`, `RoleRoute` components
-- [ ] `AppShell` with header and role-aware navigation
-- [ ] Base UI components — Button, Input, Badge, Spinner, Toast, Modal, Table
-- [ ] Base styling and layout
+- [x] Vite proxy configured — `/api` to `http://localhost:5000`
+- [x] React Router installed and the route table written
+- [x] `src/api/client.js` — Axios instance with `withCredentials: true`
+- [x] `src/api/auth.api.js` and `src/api/users.api.js` — every endpoint wrapped
+- [x] 401 response interceptor, with the startup `/me` call excluded via `skipAuthRedirect`
+- [x] Axios errors normalised to `{ status, code, message }`, so no component reaches through `error.response.data`
+- [x] `src/context/AuthContext.jsx` — user, loading, sessionExpired, login, register, logout, refresh
+- [x] Initial `/me` call on mount, with a full-page loading state
+- [x] `ProtectedRoute`, `GuestRoute`, `RoleRoute` components
+- [x] `AppShell` with header and role-aware navigation
+- [x] Base UI components — Button, Input, Badge, Spinner, Toast, loading/empty/error states
+- [x] Design tokens and full stylesheet, responsive to 360 px
+- [x] Login screen, brought forward from Phase 7 so the guards are testable
+- [ ] Modal and Table — deferred to Phase 7, where the admin screen first needs them
 
 **Done when:** refreshing while logged in restores the session with no flash of the login screen, and a logged-out user hitting `/dashboard` lands on `/login`.
+
+**Verified so far**
+
+| Check | Result |
+|---|---|
+| Production build succeeds | pass — 97.06 KB gzipped, against a 300 KB budget |
+| Deep links (`/login`, `/dashboard`, `/admin/users`, unknown paths) serve `index.html` | pass |
+| `/api/health` reaches Express through the Vite proxy | pass — `db: connected` |
+
+Interactive checks — refresh persistence, guard redirects, session expiry — are done by hand in the browser.
 
 ---
 
@@ -226,7 +240,7 @@ Tick boxes as work completes. Phases 1–8 build the application; phases 9–14 
 
 **Goal:** every screen in the FRD is built and behaves correctly.
 
-- [ ] `Login.jsx` — validation, error states, redirect to the originally requested route
+- [x] `Login.jsx` — validation, error states, redirect to the originally requested route *(done in Phase 6)*
 - [ ] `Register.jsx` — validation including password confirmation
 - [ ] `Dashboard.jsx` — role-branching content
 - [ ] `Profile.jsx` — view and inline name editing
@@ -422,3 +436,9 @@ Record dated entries here as work proceeds. The mistakes are the actual curricul
 | 2026-09-09 | 5 | Search terms are escaped before being compiled into a RegExp. Unescaped user input in a regex changes what the query matches (a `.` matching anything) and opens a denial-of-service path through catastrophic backtracking on input like `a+++++++b`. |
 | 2026-09-09 | 5 | `PATCH /users/me` relies on Zod's default behaviour of stripping unknown keys, so a client posting back a whole user object cannot alter its own role or status. Verified by sending `role: admin` and confirming the database was unchanged. |
 | 2026-09-09 | 5 | `getStats` seeds every role key at zero before merging the aggregation result. An aggregation only returns groups that exist, so a role with no members would otherwise be missing from the response and force the client to guard every read. |
+| 2026-09-09 | 6 | `AuthProvider` must sit inside `BrowserRouter`. It calls `useNavigate` to redirect on session expiry, and that hook only exists beneath a router. |
+| 2026-09-09 | 6 | The startup `/me` call passes `skipAuthRedirect`, so the shared 401 interceptor ignores it. Without that flag a guest's perfectly normal 401 triggers a redirect to `/login` from `/login`, which is a loop. |
+| 2026-09-09 | 6 | `logout` clears client state in a `finally` block, so a failed network call cannot strand the user in a half-logged-out state with no way forward. |
+| 2026-09-09 | 6 | Login was brought forward from Phase 7. The Phase 6 acceptance criteria are about guard behaviour, which cannot be exercised without a way to actually log in. |
+| 2026-09-09 | 6 | Vite's dev server returns `index.html` for unknown paths automatically. nginx does not - Phase 10 must configure `try_files $uri $uri/ /index.html` explicitly, or every route except `/` will 404 on refresh in production. |
+| 2026-09-09 | 6 | A cleanup command that stopped every node process on the machine, rather than only the PIDs it started, killed unrelated dev servers. Scope process cleanup to recorded PIDs. |

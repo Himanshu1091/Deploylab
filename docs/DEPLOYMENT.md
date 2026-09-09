@@ -27,7 +27,7 @@ Record real values in the table below as you go. Do not record secrets.
 | AMI | Ubuntu Server 24.04 LTS, `ami-006f82a1d5a27da54` (64-bit x86) |
 | Storage | 16 GiB gp3 |
 | Security group | `deploylab-sg` — `sg-0b8cad13c74d5e0a8` |
-| Public IP | `13.201.93.125` — ⚠️ **still the auto-assigned address; no Elastic IP associated yet** |
+| Elastic IP | **`3.110.17.203`** — allocation `eipalloc-0be27758ece2a7422`, associated 2026-09-09 |
 | SSH user | `deploy` (the AMI ships with `ubuntu`, kept as a fallback) |
 | App directory | `/home/deploy/deploylab` |
 | pm2 process name | `deploylab` |
@@ -40,7 +40,6 @@ Record real values in the table below as you go. Do not record secrets.
 
 | Item | Why it matters |
 |---|---|
-| **No Elastic IP associated** | The current address is the auto-assigned one and changes on every stop/start, which would break the Atlas allowlist and later the DNS record |
 | **Atlas allowlist still `0.0.0.0/0`** | Narrow it to the Elastic IP once that exists. Add the new rule before removing the open one |
 | **Production shares a database with development** | Both point at the same Atlas cluster and the same `Deploylab` database. Seeding, testing, or a careless delete locally now touches production data. Acceptable while learning; a separate database — even just a different name in the same cluster — is the fix |
 
@@ -165,6 +164,25 @@ Atlas allowlist and any DNS record. Record it in the facts table.
 
 > Release the Elastic IP if you ever terminate the instance. An allocated address
 > not attached to a running instance is billed.
+
+**Allocate and associate are two separate steps.** An address that is allocated
+but attached to nothing does no work and still bills.
+
+#### Attaching one to an already-running instance
+
+The auto-assigned public address is released the moment you confirm, so the old
+URL dies immediately. Everything else keeps running — pm2, nginx, the security
+group rule (which filters on *your* address, not the server's), and the site
+config, since `server_name _` matches any host.
+
+One transient effect is worth expecting. The server's **outbound** address
+changes too, which severs every open connection to Atlas. Health returned `503`
+with `db: disconnected` for around thirty seconds, the log showed `[db]
+reconnected`, and it came back on its own with no restart and no intervention.
+
+Mongoose reconnects by design. The health endpoint exists to make exactly this
+kind of moment legible instead of mysterious — a `503` that says
+`db: disconnected` is a far better thing to find than a page that simply hangs.
 
 ---
 

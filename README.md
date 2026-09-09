@@ -106,11 +106,22 @@ Note that `NODE_ENV=production` makes the session cookie `Secure`, which browser
 
 ## Status
 
-Phases 0–8 complete. The application is feature-complete for v1.0, hardened, and verified running as a single production process serving both the API and the built frontend.
+**Live at http://3.110.17.203** — AWS EC2, Ubuntu 24.04, nginx serving the built frontend and proxying the API to Node under pm2.
 
-Now in the deployment phases this project exists for. Target is **AWS EC2**, Ubuntu 24.04 — see [DEPLOYMENT.md](docs/DEPLOYMENT.md) for the full runbook, starting from an empty AWS account.
+Phases 0–10 complete: the application is feature-complete for v1.0, hardened, deployed, and reachable on a stable Elastic IP.
 
-Sign in with any seeded account to see the role-appropriate experience.
+| Phase | Status |
+|---|---|
+| 0–8 — build and hardening | complete |
+| 9 — server provisioning | complete |
+| 10 — nginx reverse proxy | complete |
+| 11 — TLS | **deferred** — no domain, so the site runs over plain HTTP |
+| 12 — CD | next |
+| 13–14 — Docker, observability | optional |
+
+Because there is no TLS, `COOKIE_SECURE=false` is set on the server. Session tokens therefore cross the network in plaintext. That is a deliberate trade for a throwaway learning deployment and would not be acceptable with real data — see [ARCHITECTURE.md](docs/ARCHITECTURE.md) for the reasoning.
+
+See [DEPLOYMENT.md](docs/DEPLOYMENT.md) for the full runbook, starting from an empty AWS account.
 
 **Live endpoints**
 

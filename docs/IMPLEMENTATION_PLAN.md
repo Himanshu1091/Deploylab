@@ -4,7 +4,7 @@
 |---|---|
 | Version | 1.0 |
 | Started | 2026-09-08 |
-| Current phase | Phase 4 |
+| Current phase | Phase 5 |
 
 Tick boxes as work completes. Phases 1–8 build the application; phases 9–14 are the actual point of the project.
 
@@ -14,7 +14,7 @@ Tick boxes as work completes. Phases 1–8 build the application; phases 9–14 
 - [x] Phase 1 — Repository and tooling
 - [x] Phase 2 — Backend foundation
 - [x] Phase 3 — Data model and seeding
-- [ ] Phase 4 — Authentication
+- [x] Phase 4 — Authentication
 - [ ] Phase 5 — RBAC and user management
 - [ ] Phase 6 — Frontend foundation
 - [ ] Phase 7 — Frontend screens
@@ -134,31 +134,37 @@ Tick boxes as work completes. Phases 1–8 build the application; phases 9–14 
 
 ---
 
-## Phase 4 — Authentication
+## Phase 4 — Authentication ✅
 
 **Goal:** register, log in, restore session, log out.
 
-- [ ] `src/validators/auth.schema.js` — Zod schemas for register and login
-- [ ] `src/middleware/validate.js` — generic schema validation middleware
-- [ ] `src/services/auth.service.js` — register, login, token signing
-- [ ] `src/controllers/auth.controller.js` — cookie setting and clearing
-- [ ] `POST /api/auth/register`
-- [ ] `POST /api/auth/login`
-- [ ] `POST /api/auth/logout`
-- [ ] `GET /api/auth/me`
-- [ ] `src/middleware/requireAuth.js` — verify JWT, load the user, reject when inactive
-- [ ] Cookie flags correct per environment — `secure` only in production
+- [x] `src/validators/auth.schema.js` — Zod schemas for register and login
+- [x] `src/middleware/validate.js` — generic schema validation middleware
+- [x] `src/config/cookie.js` — cookie name and attributes in one place
+- [x] `src/utils/serializeUser.js` — the single shape a user leaves the API in
+- [x] `src/services/auth.service.js` — register, login, token signing
+- [x] `src/controllers/auth.controller.js` — cookie setting and clearing
+- [x] `POST /api/auth/register`
+- [x] `POST /api/auth/login`
+- [x] `POST /api/auth/logout`
+- [x] `GET /api/auth/me`
+- [x] `src/middleware/requireAuth.js` — verify JWT, load the user, reject when inactive
+- [x] Cookie flags correct per environment — `secure` only in production
+- [x] Cookie lifetime derived from the token's own `exp`, so the two cannot drift
+- [x] Constant-time-ish login: a dummy bcrypt compare runs when no account matches
 
-**Verify with a REST client**
+**Verified end to end against a running server — 42 checks, all passing**
 
-- [ ] Register returns `201` and a `Set-Cookie` header
-- [ ] Duplicate email returns `409`
-- [ ] Wrong password returns `401`
-- [ ] Unknown email returns `401` with the *same* message as a wrong password
-- [ ] `/me` without a cookie returns `401`
-- [ ] `/me` with a cookie returns the user, and no `passwordHash`
-- [ ] Logout clears the cookie
-- [ ] A deactivated user is refused at login with `403`
+| Group | Covered |
+|---|---|
+| Registration | `201` with a `Set-Cookie`; cookie is `HttpOnly`, `SameSite=Lax`, not `Secure` in dev, `Max-Age` 86399; response omits `passwordHash`; self-registration always yields `employee` |
+| Input validation | Duplicate email `409 EMAIL_EXISTS`; short password `400` with a readable message; malformed email `400`; empty credentials `400` |
+| Privilege escalation | `role: "admin"` in the register body is stripped, account is still `employee` |
+| Login | Wrong password and unknown email both return `401` with a byte-identical message and code; correct credentials `200`; email match is case-insensitive |
+| Session | `/me` without a cookie `401` and leaks no data; with a cookie returns the right user without `passwordHash`; tampered and malformed tokens `401` |
+| Logout | Clears the cookie with matching attributes; idempotent without a session |
+| Roles | All three seeded accounts log in and carry the right role; employee `/me` populates `manager.name` and exposes `managerId` as a string |
+| Deactivation | Login `403 ACCOUNT_DISABLED`; an already-issued token stops working immediately, returning `401` |
 
 ---
 
@@ -398,3 +404,8 @@ Record dated entries here as work proceeds. The mistakes are the actual curricul
 | 2026-09-08 | 1 | Remote repo was empty, so `main` was seeded with a bare initial commit to give pull requests a base branch. |
 | 2026-09-08 | 1 | Renamed `client/` → `frontend/` and `server/` → `backend/`. "Server" was doing double duty as both a directory name and the deployment host, which will only get more confusing from Phase 9 onward. |
 | 2026-09-08 | 1 | Windows gotcha: PowerShell 5.1's `Set-Content -Encoding utf8` writes a BOM. Vite rejected `package.json` as invalid JSON because of it. Use `[System.IO.File]::WriteAllText` with `UTF8Encoding($false)` when writing JSON or `.env` files on Windows. |
+| 2026-09-09 | 4 | Express 5 made `req.query` a getter with no setter, so validation middleware cannot overwrite it. Parsed query params go to `req.validatedQuery` instead. Matters from Phase 5, where the user list takes query parameters. |
+| 2026-09-09 | 4 | Login runs a bcrypt compare against a throwaway hash when no account matches. Skipping the hash for a missing account returns in a fraction of the time, and that timing difference re-opens exactly the account enumeration the identical error message exists to close. |
+| 2026-09-09 | 4 | Cookie `maxAge` is read back off the signed token's own `exp` claim rather than parsed separately from `JWT_EXPIRES_IN`. One source of truth, so cookie and token cannot expire at different times. |
+| 2026-09-09 | 4 | Zod 4 exposes `z.email()` at the top level; `z.string().email()` is the deprecated v3 form. |
+| 2026-09-09 | 4 | PowerShell 5.1 re-splits a here-string containing double quotes when passing it to a native exe, so `git commit -m` received the message as separate pathspecs. Use `git commit -F <file>` for any message with quotes. |

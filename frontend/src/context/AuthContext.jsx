@@ -54,16 +54,22 @@ export function AuthProvider({ children }) {
   }, []);
 
   const login = useCallback(async (credentials) => {
+    // Cleared when the attempt starts, not when it succeeds. The notice explains
+    // why the user landed on this page; once they act on it, it is stale. Leaving
+    // it until success stacks it above the error from a failed attempt, which
+    // reads as two unrelated problems.
+    setSessionExpired(false);
+
     const loggedIn = await authApi.login(credentials);
     setUser(loggedIn);
-    setSessionExpired(false);
     return loggedIn;
   }, []);
 
   const register = useCallback(async (payload) => {
+    setSessionExpired(false);
+
     const created = await authApi.register(payload);
     setUser(created);
-    setSessionExpired(false);
     return created;
   }, []);
 

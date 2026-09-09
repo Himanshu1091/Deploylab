@@ -89,7 +89,9 @@ Creates one account per role. Passwords come from `SEED_*` in `backend/.env`.
 
 ## Status
 
-Phases 0–5 complete. The API is feature-complete for v1.0: authentication with a JWT in an httpOnly cookie, and every RBAC endpoint enforcing its role on the server. Next: Phase 6 — the frontend shell, auth context, and route guards.
+Phases 0–6 complete. The API is feature-complete for v1.0, and the frontend now has an auth context, route guards, a role-aware shell, and a working login screen. Next: Phase 7 — the remaining screens.
+
+Sign in with any seeded account to see the role-appropriate navigation.
 
 **Live endpoints**
 

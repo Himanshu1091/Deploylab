@@ -4,7 +4,7 @@
 |---|---|
 | Version | 1.0 |
 | Started | 2026-09-08 |
-| Current phase | Phase 8 |
+| Current phase | Phase 9 |
 
 Tick boxes as work completes. Phases 1–8 build the application; phases 9–14 are the actual point of the project.
 
@@ -18,7 +18,7 @@ Tick boxes as work completes. Phases 1–8 build the application; phases 9–14 
 - [x] Phase 5 — RBAC and user management
 - [x] Phase 6 — Frontend foundation
 - [x] Phase 7 — Frontend screens
-- [ ] Phase 8 — Hardening and production build
+- [x] Phase 8 — Hardening and production build
 - [ ] Phase 9 — Server provisioning
 - [ ] Phase 10 — nginx reverse proxy
 - [ ] Phase 11 — Domain and HTTPS
@@ -277,24 +277,40 @@ shapes each one sends, which catches drift the backend's own tests cannot see:
 
 ---
 
-## Phase 8 — Hardening and Production Build
+## Phase 8 — Hardening and Production Build ✅
 
 **Goal:** the production build runs from a single Node process, exactly as it will on the server.
 
-- [ ] `express-rate-limit` on auth routes and globally
-- [ ] `app.set('trust proxy', 1)` for correct client IPs behind nginx
-- [ ] Helmet configured, with CSP tuned so the built bundle loads
-- [ ] Production error handler — no stack traces in responses
-- [ ] Every environment variable documented in both `.env.example` files
-- [ ] `frontend` build script produces `frontend/dist`
-- [ ] Express serves `frontend/dist` statically when `NODE_ENV=production`
-- [ ] SPA fallback in Express — any non-`/api` path returns `index.html`
-- [ ] `npm run build` at the root builds the client
-- [ ] Bundle size checked against NFR-02 (300 KB gzipped)
+- [x] `express-rate-limit` on auth routes and globally
+- [x] Login limiter counts failures only, so signing in on several devices does not lock you out
+- [x] Health exempt from the global limiter
+- [x] `app.set('trust proxy', 1)` for correct client IPs behind nginx
+- [x] Helmet configured, with an explicit CSP tuned so the built bundle loads
+- [x] `upgrade-insecure-requests` deliberately omitted until TLS exists in Phase 11
+- [x] Production error handler — no stack traces in responses
+- [x] Every environment variable documented in both `.env.example` files
+- [x] `frontend` build script produces `frontend/dist`
+- [x] Express serves `frontend/dist` statically when `NODE_ENV=production`
+- [x] Hashed assets cached one year; `index.html` never cached
+- [x] SPA fallback in Express — any non-`/api` path with no file extension returns `index.html`
+- [x] Root `package.json` with `build`, `start`, `seed`, and `install:all`
+- [x] Bundle size checked against NFR-02 — 100.6 KB gzipped, well inside the 300 KB budget
 
 **Done when:** with `NODE_ENV=production`, a single `node src/server.js` serves the whole application on port 5000, deep links survive a refresh, and login works over plain HTTP locally.
 
 This phase is the rehearsal. Anything broken here will be far harder to diagnose over SSH.
+
+**Verified against a production-mode server — 32 checks, all passing**
+
+| Group | Covered |
+|---|---|
+| Serving | `/` returns the built page with the React root and a hashed bundle; the hashed asset is served with `max-age=31536000`; `index.html` returns `no-cache` |
+| SPA fallback | `/login`, `/dashboard`, `/admin/users`, `/team`, and an arbitrary deep path all return `index.html` |
+| Fallback limits | A missing asset returns `404` and not HTML; a missing root file `404`s; an unknown `/api` route still returns the JSON `ROUTE_NOT_FOUND` envelope |
+| Headers | CSP present with `default-src 'self'` and `frame-ancestors 'none'`; no `upgrade-insecure-requests`; `nosniff`; `X-Frame-Options`; `X-Powered-By` removed |
+| Production cookie | Login succeeds; cookie carries `Secure` alongside `HttpOnly` and `SameSite=Lax` |
+| Error shape | A validation failure carries no `stack` field in production |
+| Rate limiting | Login returns `429` after 10 failures; a correct password is blocked too once the limit is hit; the `429` uses the standard envelope and sets `RateLimit` headers; health stays reachable |
 
 ---
 
@@ -465,3 +481,9 @@ Record dated entries here as work proceeds. The mistakes are the actual curricul
 | 2026-09-09 | 7 | Search is debounced 300ms. Without it every keystroke is a database query. |
 | 2026-09-09 | 7 | React 19 passes `ref` as an ordinary prop to function components, so `Modal` can focus the confirm button through `Button` without `forwardRef`. |
 | 2026-09-09 | 7 | Editing this file with a shell append invalidates the editing tool's cached copy, and later edits fail with `String not found` even when the text is plainly there. Re-read the file after any out-of-band write. |
+| 2026-09-09 | 8 | Express 5 upgraded path-to-regexp and `app.get('*')` is no longer valid syntax - it throws at startup. The SPA fallback is written as middleware instead, which is clearer anyway. |
+| 2026-09-09 | 8 | First run of the production check caught a real bug: a missing asset fell through to `index.html` with a 200. A stale page requesting a deleted bundle would then get HTML where JavaScript was expected, surfacing as `Unexpected token '<'`. Paths with a file extension now skip the fallback and 404 properly. |
+| 2026-09-09 | 8 | The login limiter counts failures only. A successful login is evidence the password is already known, so counting it would lock out someone signing in across several devices while doing nothing extra against an attacker. Once the limit is reached the endpoint closes for that IP regardless - lifting it on a correct password would remove the block at exactly the moment an attacker guessed right. |
+| 2026-09-09 | 8 | `upgrade-insecure-requests` is left out of the CSP until Phase 11. It rewrites requests to https, which makes a production build untestable locally over plain HTTP. |
+| 2026-09-09 | 8 | Rate limit counters are in memory: they reset on restart and are per-process. Fine for one instance; pm2 cluster mode would need a shared store. |
+| 2026-09-09 | 8 | `index.html` must never be cached while hashed assets are cached hard. Caching the entry point leaves browsers loading an old page that points at assets the last deploy deleted. |

@@ -87,6 +87,23 @@ Creates one account per role. Passwords come from `SEED_*` in `backend/.env`.
 | manager | `manager@deploylab.local` |
 | employee | `employee@deploylab.local` |
 
+## Running the production build locally
+
+This is exactly how the app runs on the server: one Node process serving both the API and the built frontend.
+
+```bash
+npm run build                      # builds frontend/dist
+cd backend && NODE_ENV=production npm start
+```
+
+Open `http://localhost:5000`. On Windows PowerShell, set the variable separately:
+
+```powershell
+$env:NODE_ENV = 'production'; npm start
+```
+
+Note that `NODE_ENV=production` makes the session cookie `Secure`, which browsers drop over plain HTTP. Logging in through a browser therefore fails locally until TLS exists — expected, and the reason Phase 11 comes before switching production on for real.
+
 ## Status
 
 Phases 0–7 complete. **The application is feature-complete for v1.0** — every screen in the FRD is built and every endpoint enforces its role on the server.

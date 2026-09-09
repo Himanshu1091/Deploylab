@@ -92,6 +92,7 @@ backend/
 ├── src/
 │   ├── config/
 │   │   ├── env.js            Validates and exports environment variables
+│   │   ├── cookie.js         Session cookie name and attributes
 │   │   └── db.js             Mongoose connection with retry
 │   ├── models/
 │   │   └── User.js
@@ -116,7 +117,8 @@ backend/
 │   │   ├── auth.schema.js
 │   │   └── user.schema.js
 │   ├── utils/
-│   │   └── ApiError.js
+│   │   ├── ApiError.js
+│   │   └── serializeUser.js  The one shape a user leaves the API in
 │   ├── app.js               Express app: middleware and routes, no listening
 │   └── server.js            Connects to the DB, listens, handles signals
 ├── scripts/

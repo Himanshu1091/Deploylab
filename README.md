@@ -89,4 +89,14 @@ Creates one account per role. Passwords come from `SEED_*` in `backend/.env`.
 
 ## Status
 
-Phases 0–3 complete: documentation, scaffolding, backend foundation, and the data model. `/api/health` is live, the frontend boot page verifies end-to-end connectivity, and the `users` collection is seeded with one account per role. Next: Phase 4 — authentication.
+Phases 0–4 complete: documentation, scaffolding, backend foundation, the data model, and authentication. The API supports register, login, logout, and session restore with a JWT in an httpOnly cookie. Next: Phase 5 — RBAC middleware and user management endpoints.
+
+**Live endpoints**
+
+| Method | Path | Auth |
+|---|---|---|
+| GET | `/api/health` | — |
+| POST | `/api/auth/register` | — |
+| POST | `/api/auth/login` | — |
+| POST | `/api/auth/logout` | — |
+| GET | `/api/auth/me` | cookie |

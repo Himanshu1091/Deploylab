@@ -4,7 +4,7 @@
 |---|---|
 | Version | 1.0 |
 | Started | 2026-09-08 |
-| Current phase | Phase 9 |
+| Current phase | Phase 10 |
 
 Tick boxes as work completes. Phases 1–8 build the application; phases 9–14 are the actual point of the project.
 
@@ -19,7 +19,7 @@ Tick boxes as work completes. Phases 1–8 build the application; phases 9–14 
 - [x] Phase 6 — Frontend foundation
 - [x] Phase 7 — Frontend screens
 - [x] Phase 8 — Hardening and production build
-- [ ] Phase 9 — Server provisioning
+- [x] Phase 9 — Server provisioning
 - [ ] Phase 10 — nginx reverse proxy
 - [ ] Phase 11 — Domain and HTTPS
 - [ ] Phase 12 — CI/CD
@@ -314,7 +314,7 @@ This phase is the rehearsal. Anything broken here will be far harder to diagnose
 
 ---
 
-## Phase 9 — Server Provisioning
+## Phase 9 — Server Provisioning ✅
 
 **Goal:** the application runs on a real server, reachable by IP.
 
@@ -327,43 +327,43 @@ live in [DEPLOYMENT.md](DEPLOYMENT.md); this is the checklist.
 **Billing safety — before launching anything**
 
 - [x] AWS account created — on the credits-based free plan, $100 expiring 2027-03-09
-- [ ] MFA on the root account; an IAM user for daily work
+- [x] MFA on the root account; an IAM user for daily work
 - [ ] Budget alert configured
 - [ ] Free tier usage alerts enabled
 - [x] Free tier terms checked — this is the credits model, not the old 12-month tier, so the risk is burning the balance rather than a surprise invoice
 
 **Instance**
 
-- [ ] **Set the region before creating anything** — `ap-south-1` (Mumbai), matching the Atlas cluster. EC2 resources are regional and cannot be moved
-- [ ] ed25519 key pair created and permissions fixed locally
-- [ ] Security group: 22 from **your IP only**, 80 and 443 open, 5000 closed
-- [ ] Launch Ubuntu 24.04 LTS
+- [x] **Set the region before creating anything** — `ap-south-1` (Mumbai), matching the Atlas cluster. EC2 resources are regional and cannot be moved
+- [x] ed25519 key pair created and permissions fixed locally
+- [x] Security group: 22 from **your IP only**, 80 and 443 open, 5000 closed
+- [x] Launch Ubuntu 24.04 LTS
 - [ ] Elastic IP allocated and associated
-- [ ] SSH in as `ubuntu` and confirm access
+- [x] SSH in as `ubuntu` and confirm access
 
 **Server preparation**
 
-- [ ] `apt update && apt upgrade`
-- [ ] **Add 2 GB swap** — do this before building anything
-- [ ] Create the `deploy` user with sudo rights and a copy of the SSH key
-- [ ] Verify SSH as `deploy` in a second terminal **before** hardening
-- [ ] Disable root SSH login and password authentication, checking `sshd_config.d/` too
-- [ ] `sudo sshd -t` before reloading
-- [ ] `ufw` allowing OpenSSH, 80, 443
+- [x] `apt update && apt upgrade`
+- [x] **Add 2 GB swap** — do this before building anything
+- [x] Create the `deploy` user with sudo rights and a copy of the SSH key
+- [x] Verify SSH as `deploy` in a second terminal **before** hardening
+- [x] Disable root SSH login and password authentication, checking `sshd_config.d/` too
+- [x] `sudo sshd -t` before reloading
+- [x] `ufw` allowing OpenSSH, 80, 443
 
 **Application**
 
-- [ ] Install Node.js 22 LTS via NodeSource
-- [ ] Install git and pm2
-- [ ] Clone the repository
-- [ ] Create `backend/.env` on the server with a **freshly generated** `JWT_SECRET`
-- [ ] `chmod 600 backend/.env`
-- [ ] `npm ci` in both workspaces
-- [ ] Build the frontend
+- [x] Install Node.js 22 LTS via NodeSource
+- [x] Install git and pm2
+- [x] Clone the repository
+- [x] Create `backend/.env` on the server with a **freshly generated** `JWT_SECRET`
+- [x] `chmod 600 backend/.env`
+- [x] `npm ci` in both workspaces
+- [x] Build the frontend
 - [ ] Narrow the Atlas allowlist to the Elastic IP — add the new rule before removing `0.0.0.0/0`
-- [ ] `pm2 start ecosystem.config.cjs`
-- [ ] Seed the accounts
-- [ ] `pm2 save` and `pm2 startup`, running the exact command pm2 prints
+- [x] `pm2 start ecosystem.config.cjs`
+- [x] Seed the accounts
+- [x] `pm2 save` and `pm2 startup`, running the exact command pm2 prints
 
 **Done when:** on the server, `curl localhost:5000/api/health` returns
 `db: "connected"` and `curl localhost:5000/` returns `200`; the same port is
@@ -375,6 +375,25 @@ Note the correction: an earlier draft of this plan expected
 binds Express to `127.0.0.1` in production, and the security group leaves 5000
 shut. Verification is over SSH until nginx exists in Phase 10, and the port
 timing out from outside is itself one of the checks.
+
+**Verified on the server, 2026-09-09**
+
+| Check | Result |
+|---|---|
+| `curl localhost:5000/api/health` | `{"status":"ok","db":"connected",...}` |
+| `curl localhost:5000/` | `200`, serves the built page |
+| SPA deep link `/admin/users` | `200` |
+| Missing asset `/assets/nope.js` | `404` — the Phase 8 fallback fix holding in production |
+| `ss -tlnp` | port 5000 bound to `127.0.0.1` only; 22 the sole externally reachable port |
+| Reboot | pm2 resurrected the app, swap and ufw both persisted, health green again |
+| Build | Produced the same bundle hash as the local build, so the build is reproducible |
+
+**Notes from doing it**
+
+- The repository is private, so an anonymous HTTPS clone fails. A read-only deploy key on the server is the fix, and Phase 12 reuses it.
+- Swap earned its place: the build touched 19 MiB of it on a 1 GB box.
+- The `00-` prefix on the SSH hardening drop-in matters. OpenSSH takes the first value it finds for a keyword and reads `sshd_config.d/` in lexical order, so a `99-` file would have lost to the image's own `60-cloudimg-settings.conf`.
+- The `deploy` user was given passwordless sudo. It is created with no password, so without that it could not use sudo at all — and this mirrors how the stock `ubuntu` user on the image is already configured.
 
 **Expected snags:** the Vite build being killed with no error message, which is
 the OOM killer and means swap was skipped; Atlas rejecting the connection after
@@ -527,3 +546,7 @@ Record dated entries here as work proceeds. The mistakes are the actual curricul
 | 2026-09-09 | 8 | `upgrade-insecure-requests` is left out of the CSP until Phase 11. It rewrites requests to https, which makes a production build untestable locally over plain HTTP. |
 | 2026-09-09 | 8 | Rate limit counters are in memory: they reset on restart and are per-process. Fine for one instance; pm2 cluster mode would need a shared store. |
 | 2026-09-09 | 8 | `index.html` must never be cached while hashed assets are cached hard. Caching the entry point leaves browsers loading an old page that points at assets the last deploy deleted. |
+| 2026-09-09 | 9 | The repository is private, so cloning over anonymous HTTPS fails with `could not read Username`. A read-only deploy key scoped to the one repo beats a personal access token: nothing to renew, and the server can pull but never push. |
+| 2026-09-09 | 9 | Swap was used during the build on the 1 GB instance. Without it the OOM killer would have terminated the build with no error message. |
+| 2026-09-09 | 9 | Production and development currently share one Atlas database. A local seed or delete now reaches production data. Acceptable while learning; a separate database name is the fix. |
+| 2026-09-09 | 9 | Health returned an empty body when queried immediately after reboot, because Mongoose had not finished connecting. Not a fault - reporting that state is what the endpoint is for. |

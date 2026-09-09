@@ -542,11 +542,135 @@ for maintenance, for a crash, because someone stopped one to save money.
 
 ## 16. nginx
 
-_Phase 10. Paste the full working site config here once it is running._
+```bash
+sudo apt install -y nginx
+```
+
+### The permission that causes a 403
+
+nginx workers run as `www-data`, and `/home/deploy` is `0750` — no traverse for
+anyone outside the `deploy` group. The files are perfectly readable; nginx simply
+cannot walk the path to them, and returns 403 on a file that plainly exists.
+
+```bash
+sudo usermod -aG deploy www-data
+sudo systemctl restart nginx   # restart, not reload: group membership is
+                               # applied when workers are spawned fresh
+```
+
+`chmod 755 /home/deploy` also fixes it, but opens the home directory to every
+local account rather than just the web server.
+
+Check it directly rather than guessing:
+
+```bash
+sudo -u www-data test -r /home/deploy/deploylab/frontend/dist/index.html \
+  && echo READABLE || echo "NOT READABLE"
+```
+
+### Site config
+
+`/etc/nginx/sites-available/deploylab`:
 
 ```nginx
-# placeholder
+server {
+    listen 80;
+    listen [::]:80;
+    server_name _;
+
+    root /home/deploy/deploylab/frontend/dist;
+    index index.html;
+
+    access_log /var/log/nginx/deploylab.access.log;
+    error_log  /var/log/nginx/deploylab.error.log;
+
+    client_max_body_size 1m;
+
+    gzip on;
+    gzip_vary on;
+    gzip_min_length 1024;
+    gzip_proxied any;
+    gzip_types text/plain text/css application/javascript application/json image/svg+xml;
+
+    # ^~ so this prefix beats the regex location below. Without it a request for
+    # /api/something.json would be captured by the file-extension rule and 404.
+    location ^~ /api {
+        proxy_pass http://127.0.0.1:5000;
+        proxy_http_version 1.1;
+
+        proxy_set_header Host              $host;
+        proxy_set_header X-Real-IP         $remote_addr;
+        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        proxy_connect_timeout 5s;
+        proxy_read_timeout    60s;
+    }
+
+    location ^~ /assets/ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+        try_files $uri =404;
+    }
+
+    location = /index.html {
+        add_header Cache-Control "no-cache" always;
+    }
+
+    # Anything that looks like a file must 404 when missing rather than falling
+    # through to index.html. HTML where a script was expected shows up as
+    # "Unexpected token '<'", which says nothing about the real problem.
+    location ~ \.[^/]+$ {
+        try_files $uri =404;
+    }
+
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+}
 ```
+
+Enable it and drop the default site, which otherwise answers on `/`:
+
+```bash
+sudo ln -sf /etc/nginx/sites-available/deploylab /etc/nginx/sites-enabled/deploylab
+sudo rm -f /etc/nginx/sites-enabled/default
+sudo nginx -t
+sudo systemctl restart nginx
+```
+
+### Why the header block matters
+
+Express runs with `trust proxy`, so `X-Forwarded-For` is what the rate limiter
+treats as the client. Omit these headers and every request appears to come from
+`127.0.0.1` — one visitor hitting the login limit then locks out everyone.
+
+Confirm it by making a request from your own machine and reading the app log:
+the address should be yours, not `127.0.0.1`.
+
+```bash
+pm2 logs deploylab --lines 5 --nostream
+```
+
+### Verified from the public internet
+
+| Check | Result |
+|---|---|
+| `/`, `/login`, `/admin/users` | `200`, `Cache-Control: no-cache` |
+| `/api/health` | `200`, `db: connected` |
+| `/assets/<hashed>.js` | `200`, gzip, `max-age=31536000, immutable` |
+| `/assets/nope.js`, `/favicon.ico` | `404`, not the HTML fallback |
+| Port `5000` from outside | times out |
+| Client IP in the app log | the real address, not `127.0.0.1` |
+
+### Known: login does not work yet
+
+`NODE_ENV=production` sets the session cookie `Secure`, and browsers discard
+`Secure` cookies delivered over plain HTTP. Login returns `200`, the cookie is
+dropped, and the app bounces back to the login screen.
+
+This is expected and is why TLS comes before anything depends on it. Phase 11
+resolves it.
 
 ---
 

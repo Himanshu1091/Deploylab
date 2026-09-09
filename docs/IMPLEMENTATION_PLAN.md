@@ -4,7 +4,7 @@
 |---|---|
 | Version | 1.0 |
 | Started | 2026-09-08 |
-| Current phase | Phase 10 |
+| Status | Complete through Phase 12, plus the Phase 14 essentials. Phases 11 and 13 deferred by choice |
 
 Tick boxes as work completes. Phases 1–8 build the application; phases 9–14 are the actual point of the project.
 
@@ -20,11 +20,11 @@ Tick boxes as work completes. Phases 1–8 build the application; phases 9–14 
 - [x] Phase 7 — Frontend screens
 - [x] Phase 8 — Hardening and production build
 - [x] Phase 9 — Server provisioning
-- [ ] Phase 10 — nginx reverse proxy
-- [ ] Phase 11 — Domain and HTTPS
+- [x] Phase 10 — nginx reverse proxy
+- [ ] Phase 11 — Domain and HTTPS — **deferred**, no domain; the site runs over plain HTTP
 - [x] Phase 12 — CD
-- [ ] Phase 13 — Docker (optional)
-- [ ] Phase 14 — Observability and backup (optional)
+- [ ] Phase 13 — Docker (optional) — **declined**; the pm2 path is understood and working
+- [x] Phase 14 — Observability and backup — essentials done: log rotation and external uptime monitoring. Restore rehearsal and resource alerts deferred with reasons
 
 ---
 
@@ -403,24 +403,42 @@ using the wrong username, since Ubuntu AMIs use `ubuntu` rather than `ec2-user`.
 
 ---
 
-## Phase 10 — nginx Reverse Proxy
+## Phase 10 — nginx Reverse Proxy ✅
 
 **Goal:** the app is served on port 80 with nginx in front.
 
-- [ ] Install nginx
-- [ ] Write the site config in `/etc/nginx/sites-available/deploylab`
-- [ ] `location /` → `try_files $uri $uri/ /index.html` against `frontend/dist`
-- [ ] `location /api` → `proxy_pass http://127.0.0.1:5000`
-- [ ] Forward `X-Real-IP`, `X-Forwarded-For`, `X-Forwarded-Proto`, and `Host`
-- [ ] Enable gzip
-- [ ] Cache hashed assets for one year; never cache `index.html`
-- [ ] Symlink into `sites-enabled`, remove the default site
-- [ ] `nginx -t`, then reload
-- [ ] Bind Express to `127.0.0.1` only
-- [ ] Close port 5000 in the firewall
-- [ ] Decide: nginx serves static files directly (preferred) or proxies everything to Express
+- [x] Install nginx
+- [x] Write the site config in `/etc/nginx/sites-available/deploylab`
+- [x] `location /` → `try_files $uri $uri/ /index.html` against `frontend/dist`
+- [x] `location /api` → `proxy_pass http://127.0.0.1:5000`
+- [x] Forward `X-Real-IP`, `X-Forwarded-For`, `X-Forwarded-Proto`, and `Host`
+- [x] Enable gzip
+- [x] Cache hashed assets for one year; never cache `index.html`
+- [x] Symlink into `sites-enabled`, remove the default site
+- [x] `nginx -t`, then reload
+- [x] Bind Express to `127.0.0.1` only
+- [x] Close port 5000 in the firewall
+- [x] Decide: nginx serves static files directly (preferred) or proxies everything to Express
 
 **Done when:** `http://<server-ip>` loads the app, deep links refresh correctly, `/api/health` responds through the proxy, and port 5000 is unreachable from outside.
+
+**Verified from the public internet, 2026-09-09 — http://13.201.93.125**
+
+| Check | Result |
+|---|---|
+| `/`, `/login`, `/admin/users` | `200`, `Cache-Control: no-cache` |
+| `/api/health` | `200`, `db: connected` |
+| Hashed bundle | `200`, gzip, `max-age=31536000, immutable` |
+| `/assets/nope.js` and `/favicon.ico` | `404`, not the HTML fallback |
+| Port 5000 from outside | times out |
+| Client IP seen by Express | the real address, not `127.0.0.1` |
+
+**Notes from doing it**
+
+- nginx returned the predicted 403: workers run as `www-data` and `/home/deploy` is `0750`, so the path could not be traversed. Adding `www-data` to the `deploy` group is narrower than `chmod 755` on a home directory. It needs a restart rather than a reload, since supplementary groups are applied when workers spawn.
+- The `/api` location uses `^~` so it outranks the regex location that 404s file-looking paths. Without it, a request for `/api/x.json` would be captured by the regex and never reach the proxy.
+- The missing-asset rule from Phase 8 had to be rebuilt in nginx. nginx now serves static files directly, so Express never sees those requests and its own guard no longer applies.
+- **Login does not work yet.** `NODE_ENV=production` marks the cookie `Secure` and browsers discard those over plain HTTP. Expected; Phase 11 resolves it.
 
 **Expected snags:** a 502 because Express is not running or is bound to the wrong interface; a 403 because nginx cannot traverse the home directory to reach `dist` — check permissions on every parent directory.
 
@@ -559,6 +577,9 @@ Record dated entries here as work proceeds. The mistakes are the actual curricul
 | 2026-09-09 | 9 | Swap was used during the build on the 1 GB instance. Without it the OOM killer would have terminated the build with no error message. |
 | 2026-09-09 | 9 | Production and development currently share one Atlas database. A local seed or delete now reaches production data. Acceptable while learning; a separate database name is the fix. |
 | 2026-09-09 | 9 | Health returned an empty body when queried immediately after reboot, because Mongoose had not finished connecting. Not a fault - reporting that state is what the endpoint is for. |
+| 2026-09-09 | 10 | nginx 403 on a readable file: workers run as `www-data` and `/home/deploy` is 0750, so the path cannot be traversed. Fixed by adding `www-data` to the `deploy` group, which is narrower than opening the home directory to every local account. Requires restart, not reload. |
+| 2026-09-09 | 10 | The `/api` location needs `^~`. nginx checks regex locations before remaining prefix locations, so without it the file-extension rule would capture `/api/x.json` and 404 instead of proxying. |
+| 2026-09-09 | 10 | Moving static serving to nginx silently dropped the Phase 8 missing-asset guard, because Express no longer sees those requests. The rule had to be written again in nginx. Worth remembering whenever responsibility moves between layers. |
 | 2026-09-09 | 9 | Associating an Elastic IP to a running instance also changes the server's outbound address, which severed every open Atlas connection. Health reported 503 with db: disconnected for about thirty seconds, then recovered on its own - Mongoose reconnects, and the health endpoint is what made the moment legible rather than mysterious. |
 | 2026-09-10 | 12 | The home IP rotated overnight and SSH stopped working, while the site stayed up on port 80. Second lockout in a day from the same allowlist. It never kept an attacker out - key-only auth does that - so port 22 was opened and the rule dropped. |
 | 2026-09-10 | 12 | First deploy failed on `Host key verification failed`. The key matched the server exactly, so the fault was in the copy into the secret box: invisible, and slow to debug at a minute per run. Moved the host key into the workflow file, where it is reviewable in a diff and cannot be mis-pasted. A host public key is not secret. |

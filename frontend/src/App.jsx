@@ -8,9 +8,12 @@ import { ProtectedRoute } from './components/routing/ProtectedRoute.jsx';
 import { RoleRoute } from './components/routing/RoleRoute.jsx';
 
 import Login from './pages/Login.jsx';
+import Register from './pages/Register.jsx';
 import Dashboard from './pages/Dashboard.jsx';
+import Profile from './pages/Profile.jsx';
+import AdminUsers from './pages/AdminUsers.jsx';
+import Team from './pages/Team.jsx';
 import NotFound from './pages/NotFound.jsx';
-import { Placeholder } from './pages/Placeholder.jsx';
 
 export default function App() {
   const { loading } = useAuth();
@@ -25,32 +28,20 @@ export default function App() {
     <Routes>
       <Route element={<GuestRoute />}>
         <Route path="/login" element={<Login />} />
-        <Route
-          path="/register"
-          element={<Placeholder title="Create account" note="Registration form." />}
-        />
+        <Route path="/register" element={<Register />} />
       </Route>
 
       <Route element={<ProtectedRoute />}>
         <Route element={<AppShell />}>
           <Route path="/dashboard" element={<Dashboard />} />
-          <Route
-            path="/profile"
-            element={<Placeholder title="Profile" note="View and edit your own details." />}
-          />
+          <Route path="/profile" element={<Profile />} />
 
           <Route element={<RoleRoute roles={['admin']} />}>
-            <Route
-              path="/admin/users"
-              element={<Placeholder title="Users" note="Full user management table." />}
-            />
+            <Route path="/admin/users" element={<AdminUsers />} />
           </Route>
 
           <Route element={<RoleRoute roles={['manager']} />}>
-            <Route
-              path="/team"
-              element={<Placeholder title="My Team" note="Read-only list of your direct reports." />}
-            />
+            <Route path="/team" element={<Team />} />
           </Route>
         </Route>
       </Route>

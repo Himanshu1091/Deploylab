@@ -108,7 +108,9 @@ Note that `NODE_ENV=production` makes the session cookie `Secure`, which browser
 
 Phases 0–8 complete. The application is feature-complete for v1.0, hardened, and verified running as a single production process serving both the API and the built frontend.
 
-Now in the deployment phases this project exists for. Target is **AWS EC2**, Ubuntu 24.04 — see [DEPLOYMENT.md](docs/DEPLOYMENT.md) for the full runbook, starting from an empty AWS account.
+**Running live on AWS EC2 at http://13.201.93.125** — nginx serving the built frontend and proxying the API to Node under pm2. Login needs TLS first (the session cookie is ``Secure``), which is Phase 11.
+
+Target is **AWS EC2**, Ubuntu 24.04 — see [DEPLOYMENT.md](docs/DEPLOYMENT.md) for the full runbook, starting from an empty AWS account.
 
 Sign in with any seeded account to see the role-appropriate experience.
 

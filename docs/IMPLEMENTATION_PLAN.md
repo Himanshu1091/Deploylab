@@ -4,7 +4,7 @@
 |---|---|
 | Version | 1.0 |
 | Started | 2026-09-08 |
-| Current phase | Phase 7 |
+| Current phase | Phase 8 |
 
 Tick boxes as work completes. Phases 1–8 build the application; phases 9–14 are the actual point of the project.
 
@@ -17,7 +17,7 @@ Tick boxes as work completes. Phases 1–8 build the application; phases 9–14 
 - [x] Phase 4 — Authentication
 - [x] Phase 5 — RBAC and user management
 - [x] Phase 6 — Frontend foundation
-- [ ] Phase 7 — Frontend screens
+- [x] Phase 7 — Frontend screens
 - [ ] Phase 8 — Hardening and production build
 - [ ] Phase 9 — Server provisioning
 - [ ] Phase 10 — nginx reverse proxy
@@ -220,7 +220,7 @@ Tick boxes as work completes. Phases 1–8 build the application; phases 9–14 
 - [x] Base UI components — Button, Input, Badge, Spinner, Toast, loading/empty/error states
 - [x] Design tokens and full stylesheet, responsive to 360 px
 - [x] Login screen, brought forward from Phase 7 so the guards are testable
-- [ ] Modal and Table — deferred to Phase 7, where the admin screen first needs them
+- [x] Modal and Table — added in Phase 7, where the admin screen first needs them
 
 **Done when:** refreshing while logged in restores the session with no flash of the login screen, and a logged-out user hitting `/dashboard` lands on `/login`.
 
@@ -236,25 +236,42 @@ Interactive checks — refresh persistence, guard redirects, session expiry — 
 
 ---
 
-## Phase 7 — Frontend Screens
+## Phase 7 — Frontend Screens ✅
 
 **Goal:** every screen in the FRD is built and behaves correctly.
 
 - [x] `Login.jsx` — validation, error states, redirect to the originally requested route *(done in Phase 6)*
-- [ ] `Register.jsx` — validation including password confirmation
-- [ ] `Dashboard.jsx` — role-branching content
-- [ ] `Profile.jsx` — view and inline name editing
-- [ ] `AdminUsers.jsx` — table, filter, pagination
-- [ ] Role dropdown with a confirmation dialog and optimistic revert on failure
-- [ ] Status toggle with a confirmation dialog on deactivation
-- [ ] Manager assignment dropdown
-- [ ] Own-row controls disabled with an explanatory tooltip
-- [ ] `Team.jsx` — read-only table with an empty state
-- [ ] `NotFound.jsx`
-- [ ] Loading, empty, and error states on every data-fetching screen
-- [ ] Responsive down to 360 px
+- [x] `Register.jsx` — validation on blur, including password confirmation
+- [x] `Dashboard.jsx` — role-branching content with stat cards
+- [x] `Profile.jsx` — view and inline name editing
+- [x] `AdminUsers.jsx` — table, role filter, debounced search, pagination
+- [x] Role dropdown with a confirmation dialog and automatic revert on failure
+- [x] Status toggle — confirmation on deactivation, immediate on reactivation
+- [x] Manager assignment dropdown, no confirmation since it is easily reversed
+- [x] Own-row role and status controls disabled with an explanatory tooltip
+- [x] `Team.jsx` — read-only table with an empty state
+- [x] `NotFound.jsx`
+- [x] Loading, empty, and error states on every data-fetching screen
+- [x] `Modal.jsx` — Escape to close, backdrop click, focus moved into the dialog
+- [x] `TableScroll` — wide tables scroll inside their own container, not the page
+- [x] Responsive down to 360 px
 
-**Run the FRD §9 acceptance scenarios**
+**Verified — 19 contract checks, all passing**
+
+The screens were checked against a running API by replaying the exact request
+shapes each one sends, which catches drift the backend's own tests cannot see:
+
+| Screen | Confirmed |
+|---|---|
+| Register | Registration payload accepted, returns `201` |
+| Profile | `PATCH /users/me` accepted; response carries `createdAt` for "Member since" |
+| AdminUsers | Initial list call; rows carry every field the table renders; pagination carries `page`, `limit`, `total`, `pages`; role filter; search; manager dropdown loads without a `page` param; role, status, and manager mutations all accepted |
+| AdminUsers | An empty `role` string is rejected `400`, confirming the filter must be omitted rather than sent blank |
+| AdminUsers | An empty `managerId` string is rejected `400`, confirming "— None —" must be converted to `null` |
+| Dashboard | Stats response carries every field the cards read, including all three role keys; manager card reads `count` |
+| Team | Team rows carry every rendered field |
+
+**Run the FRD §9 acceptance scenarios by hand**
 
 - [ ] AT-01 through AT-13 all pass
 
@@ -442,3 +459,9 @@ Record dated entries here as work proceeds. The mistakes are the actual curricul
 | 2026-09-09 | 6 | Login was brought forward from Phase 7. The Phase 6 acceptance criteria are about guard behaviour, which cannot be exercised without a way to actually log in. |
 | 2026-09-09 | 6 | Vite's dev server returns `index.html` for unknown paths automatically. nginx does not - Phase 10 must configure `try_files $uri $uri/ /index.html` explicitly, or every route except `/` will 404 on refresh in production. |
 | 2026-09-09 | 6 | A cleanup command that stopped every node process on the machine, rather than only the PIDs it started, killed unrelated dev servers. Scope process cleanup to recorded PIDs. |
+| 2026-09-09 | 7 | Row updates are applied to state only after the request succeeds. Because every control reads its value from state, a failed change snaps the dropdown or toggle back on its own -- there is no separate rollback path that could be written wrong. |
+| 2026-09-09 | 7 | The role filter must be omitted rather than sent as an empty string, and the manager dropdown's blank option must be converted to `null`. Both are rejected 400 otherwise; confirmed by asserting the rejection rather than assuming it. |
+| 2026-09-09 | 7 | Reactivating an account happens immediately, deactivating asks first. Confirmation prompts are for actions people regret, and one on every toggle just trains them to click through. |
+| 2026-09-09 | 7 | Search is debounced 300ms. Without it every keystroke is a database query. |
+| 2026-09-09 | 7 | React 19 passes `ref` as an ordinary prop to function components, so `Modal` can focus the confirm button through `Button` without `forwardRef`. |
+| 2026-09-09 | 7 | Editing this file with a shell append invalidates the editing tool's cached copy, and later edits fail with `String not found` even when the text is plainly there. Re-read the file after any out-of-band write. |

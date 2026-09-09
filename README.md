@@ -89,9 +89,11 @@ Creates one account per role. Passwords come from `SEED_*` in `backend/.env`.
 
 ## Status
 
-Phases 0–6 complete. The API is feature-complete for v1.0, and the frontend now has an auth context, route guards, a role-aware shell, and a working login screen. Next: Phase 7 — the remaining screens.
+Phases 0–7 complete. **The application is feature-complete for v1.0** — every screen in the FRD is built and every endpoint enforces its role on the server.
 
-Sign in with any seeded account to see the role-appropriate navigation.
+Next: Phase 8 — hardening and the production build, then the deployment phases this project exists for.
+
+Sign in with any seeded account to see the role-appropriate experience.
 
 **Live endpoints**
 

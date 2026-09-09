@@ -42,8 +42,10 @@ client.interceptors.response.use(
   (error) => {
     const status = error.response?.status;
 
-    // The startup /me call is expected to 401 for a guest. Redirecting on it
-    // would bounce a visitor off the login page they are already looking at.
+    // Auth endpoints opt out, because a 401 from them is a normal answer rather
+    // than an expired session: /me 401s for any guest, and login 401s on a wrong
+    // password. Treating either as an expiry sets the "session expired" notice
+    // and redirects to the page the user is already on.
     const skip = error.config?.skipAuthRedirect;
 
     if (status === 401 && !skip && onUnauthorized) {

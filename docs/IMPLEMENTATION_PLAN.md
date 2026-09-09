@@ -338,7 +338,7 @@ live in [DEPLOYMENT.md](DEPLOYMENT.md); this is the checklist.
 - [x] ed25519 key pair created and permissions fixed locally
 - [x] Security group: 22 from **your IP only**, 80 and 443 open, 5000 closed
 - [x] Launch Ubuntu 24.04 LTS
-- [ ] Elastic IP allocated and associated
+- [x] Elastic IP allocated and associated - 3.110.17.203
 - [x] SSH in as `ubuntu` and confirm access
 
 **Server preparation**
@@ -550,3 +550,4 @@ Record dated entries here as work proceeds. The mistakes are the actual curricul
 | 2026-09-09 | 9 | Swap was used during the build on the 1 GB instance. Without it the OOM killer would have terminated the build with no error message. |
 | 2026-09-09 | 9 | Production and development currently share one Atlas database. A local seed or delete now reaches production data. Acceptable while learning; a separate database name is the fix. |
 | 2026-09-09 | 9 | Health returned an empty body when queried immediately after reboot, because Mongoose had not finished connecting. Not a fault - reporting that state is what the endpoint is for. |
+| 2026-09-09 | 9 | Associating an Elastic IP to a running instance also changes the server's outbound address, which severed every open Atlas connection. Health reported 503 with db: disconnected for about thirty seconds, then recovered on its own - Mongoose reconnects, and the health endpoint is what made the moment legible rather than mysterious. |

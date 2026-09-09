@@ -1,0 +1,16 @@
+{
+  "name": "deploylab",
+  "version": "1.0.0",
+  "private": true,
+  "description": "RBAC dashboard built as a deployment learning project",
+  "scripts": {
+    "install:all": "npm --prefix backend ci && npm --prefix frontend ci",
+    "build": "npm --prefix frontend run build",
+    "start": "npm --prefix backend start",
+    "seed": "npm --prefix backend run seed"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "license": "MIT"
+}

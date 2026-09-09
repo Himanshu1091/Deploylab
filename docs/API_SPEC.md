@@ -306,9 +306,15 @@ An empty team returns `200` with `team: []` and `count: 0` — not `404`. An emp
 
 | Scope | Limit | Window |
 |---|---|---|
-| `POST /api/auth/login` | 10 requests per IP | 15 minutes |
+| `POST /api/auth/login` | 10 **failed** attempts per IP | 15 minutes |
 | `POST /api/auth/register` | 5 requests per IP | 60 minutes |
 | All other `/api` routes | 200 requests per IP | 15 minutes |
+
+`GET /api/health` is exempt, so an uptime monitor polling frequently cannot exhaust the budget and start reporting a healthy service as down.
+
+Login counts only failures. The control exists to stop password guessing, and a successful login is evidence the password is already known — counting successes would lock out someone signing in across several devices while doing nothing extra against an attacker.
+
+The counter lives in memory, so it resets when the process restarts and is per-process. That is fine for a single instance; running pm2 in cluster mode later would need a shared store.
 
 Exceeding a limit returns `429` with a `Retry-After` header.
 

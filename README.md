@@ -89,14 +89,23 @@ Creates one account per role. Passwords come from `SEED_*` in `backend/.env`.
 
 ## Status
 
-Phases 0–4 complete: documentation, scaffolding, backend foundation, the data model, and authentication. The API supports register, login, logout, and session restore with a JWT in an httpOnly cookie. Next: Phase 5 — RBAC middleware and user management endpoints.
+Phases 0–5 complete. The API is feature-complete for v1.0: authentication with a JWT in an httpOnly cookie, and every RBAC endpoint enforcing its role on the server. Next: Phase 6 — the frontend shell, auth context, and route guards.
 
 **Live endpoints**
 
-| Method | Path | Auth |
+| Method | Path | Role |
 |---|---|---|
 | GET | `/api/health` | — |
 | POST | `/api/auth/register` | — |
 | POST | `/api/auth/login` | — |
 | POST | `/api/auth/logout` | — |
-| GET | `/api/auth/me` | cookie |
+| GET | `/api/auth/me` | any |
+| PATCH | `/api/users/me` | any |
+| GET | `/api/users` | admin |
+| GET | `/api/users/stats` | admin |
+| PATCH | `/api/users/:id/role` | admin |
+| PATCH | `/api/users/:id/status` | admin |
+| PATCH | `/api/users/:id/manager` | admin |
+| GET | `/api/users/team` | manager |
+
+See [API_SPEC.md](docs/API_SPEC.md) for request and response shapes.

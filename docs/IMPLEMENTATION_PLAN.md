@@ -326,14 +326,15 @@ live in [DEPLOYMENT.md](DEPLOYMENT.md); this is the checklist.
 
 **Billing safety — before launching anything**
 
-- [ ] AWS account created
+- [x] AWS account created — on the credits-based free plan, $100 expiring 2027-03-09
 - [ ] MFA on the root account; an IAM user for daily work
-- [ ] Zero-spend or low-threshold budget alert configured
+- [ ] Budget alert configured
 - [ ] Free tier usage alerts enabled
-- [ ] Read the free tier terms shown at signup — they changed during 2025, and a public IPv4 address is separately chargeable
+- [x] Free tier terms checked — this is the credits model, not the old 12-month tier, so the risk is burning the balance rather than a surprise invoice
 
 **Instance**
 
+- [ ] **Set the region before creating anything** — `ap-south-1` (Mumbai), matching the Atlas cluster. EC2 resources are regional and cannot be moved
 - [ ] ed25519 key pair created and permissions fixed locally
 - [ ] Security group: 22 from **your IP only**, 80 and 443 open, 5000 closed
 - [ ] Launch Ubuntu 24.04 LTS

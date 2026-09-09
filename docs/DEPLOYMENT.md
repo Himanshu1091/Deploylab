@@ -2,8 +2,9 @@
 
 | Field | Value |
 |---|---|
-| Status | Phase 9 written; phases 10–14 filled in as they complete |
+| Status | **Phase 9 complete — the app is running on the server.** Phases 10–14 filled in as they complete |
 | Target | AWS EC2, Ubuntu 24.04 LTS, `t3.micro` (1 GB RAM) |
+| First deployed | 2026-09-09 |
 
 The goal for this document: someone with a blank AWS account and this file alone
 can reproduce production. Every command that actually worked goes here, including
@@ -21,15 +22,27 @@ Record real values in the table below as you go. Do not record secrets.
 | AWS account | `376219458055` |
 | Plan | Free plan — $100 credits, expiring 2027-03-09 |
 | Region | **`ap-south-1` (Mumbai)** — chosen to match the Atlas cluster and to sit near the users |
-| Instance type | _t3.micro or t2.micro, whichever your account's free tier covers_ |
-| AMI | Ubuntu Server 24.04 LTS (64-bit x86) |
-| Elastic IP | _fill in_ |
-| SSH user | `deploy` (created in step 5; the AMI ships with `ubuntu`) |
+| Availability zone | `ap-south-1b` |
+| Instance | `deploylab` — `i-092c52d2665fd3b35`, `t3.micro`, 2 vCPU / 1 GiB |
+| AMI | Ubuntu Server 24.04 LTS, `ami-006f82a1d5a27da54` (64-bit x86) |
+| Storage | 16 GiB gp3 |
+| Security group | `deploylab-sg` — `sg-0b8cad13c74d5e0a8` |
+| Public IP | `13.201.93.125` — ⚠️ **still the auto-assigned address; no Elastic IP associated yet** |
+| SSH user | `deploy` (the AMI ships with `ubuntu`, kept as a fallback) |
 | App directory | `/home/deploy/deploylab` |
 | pm2 process name | `deploylab` |
-| Node version | _fill in after step 8_ |
+| Node version | v22.23.2, npm 10.9.8, pm2 7.0.4, git 2.43.0 |
+| Swap | 2 GiB at `/swapfile`, persistent via `fstab` |
 | Atlas cluster | M0, database `Deploylab` |
 | Domain | _Phase 11_ |
+
+### Outstanding
+
+| Item | Why it matters |
+|---|---|
+| **No Elastic IP associated** | The current address is the auto-assigned one and changes on every stop/start, which would break the Atlas allowlist and later the DNS record |
+| **Atlas allowlist still `0.0.0.0/0`** | Narrow it to the Elastic IP once that exists. Add the new rule before removing the open one |
+| **Production shares a database with development** | Both point at the same Atlas cluster and the same `Deploylab` database. Seeding, testing, or a careless delete locally now touches production data. Acceptable while learning; a separate database — even just a different name in the same cluster — is the fix |
 
 ---
 
@@ -306,9 +319,37 @@ pm2 -v
 
 ## 10. Clone and Configure
 
+The repository is **private**, so an anonymous HTTPS clone fails with
+`could not read Username for 'https://github.com'`. Use a deploy key: an SSH key
+that exists only on this server and is authorised for this one repository.
+
+Better than a personal access token — scoped to a single repo, no expiry to
+renew, and it can be read-only. Phase 12's automated deploy uses the same key.
+
+```bash
+ssh-keygen -t ed25519 -f ~/.ssh/github_deploy -N '' -C 'deploylab-ec2-deploy-key'
+
+cat > ~/.ssh/config <<'CONF'
+Host github.com
+  HostName github.com
+  User git
+  IdentityFile ~/.ssh/github_deploy
+  IdentitiesOnly yes
+CONF
+
+chmod 600 ~/.ssh/config ~/.ssh/github_deploy
+cat ~/.ssh/github_deploy.pub
+```
+
+Add that public key at **repo → Settings → Deploy keys → Add deploy key**, and
+leave *Allow write access* **unchecked**. The server only ever pulls; if it were
+ever compromised, a read-only key cannot push to your repository.
+
+Then clone over SSH, not HTTPS:
+
 ```bash
 cd ~
-git clone https://github.com/Himanshu1091/Deploylab.git deploylab
+git clone git@github.com:Himanshu1091/Deploylab.git deploylab
 cd deploylab
 ```
 
@@ -543,4 +584,7 @@ The most valuable section in this file. One row per problem actually hit.
 
 | Date | Symptom | Cause | Fix |
 |---|---|---|---|
-| | | | |
+| 2026-09-09 | `Identity file ... deploylab.pem not accessible: No such file or directory`, then `Permission denied (publickey)` | The downloaded key was still sitting in `Downloads`, never moved to `~/.ssh` | Move it, then `icacls ... /inheritance:r /grant:r "$env:USERNAME:R"` |
+| 2026-09-09 | `fatal: could not read Username for 'https://github.com'` | The repository is private, so an anonymous HTTPS clone cannot authenticate | Generate a deploy key on the server, register it read-only on the repo, clone over SSH |
+| 2026-09-09 | `/api/health` returned an empty body immediately after reboot | The app was up but Mongoose had not finished connecting — the query landed at uptime 0s | Not a fault. Wait for the connection; the health endpoint exists precisely to report this state |
+| 2026-09-09 | Remote script failed with `unexpected EOF while looking for matching quote` | Quotes inside a script were mangled passing through PowerShell into `ssh` | Base64-encode the script locally and decode it on the server, avoiding shell quoting entirely |

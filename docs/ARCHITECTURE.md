@@ -326,12 +326,20 @@ The JWT alone would be enough to identify the user, and skipping the lookup woul
 | Attribute | Development | Production | Purpose |
 |---|---|---|---|
 | `httpOnly` | true | true | Blocks JavaScript access |
-| `secure` | false | true | HTTPS only |
+| `secure` | false | true by default | HTTPS only — overridable via `COOKIE_SECURE`, see below |
 | `sameSite` | lax | lax | CSRF mitigation while keeping normal navigation working |
 | `maxAge` | 24h | 24h | Matches token expiry |
 | `path` | `/` | `/` | Sent with every request |
 
 `sameSite=lax` plus same-origin deployment means no separate CSRF token is required for this threat model. A cross-site `POST` will not carry the cookie.
+
+### Why `secure` is its own setting
+
+It would be tidier to derive `secure` from `NODE_ENV`, and that was the original design. It breaks on a production deployment without TLS: a browser silently discards a `Secure` cookie delivered over plain HTTP, so login returns `200`, the client sets its user state from the response body, and the failure only surfaces on the *next* authenticated request as a confusing "session expired".
+
+`COOKIE_SECURE` therefore overrides, defaulting to `NODE_ENV` when unset. It is validated as an explicit `'true' | 'false'` enum rather than a boolean coercion, because `z.coerce.boolean()` treats every non-empty string as true — `COOKIE_SECURE=false` would mean the opposite of what it says.
+
+Turning it off is a real cost, not a formality: the session token then crosses the network in plaintext, and anyone on the path can copy it and impersonate that user for the life of the token. It exists so an IP-only deployment can work while TLS is still pending, and nothing more.
 
 ---
 

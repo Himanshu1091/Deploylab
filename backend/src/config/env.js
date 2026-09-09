@@ -19,6 +19,18 @@ const schema = z.object({
     .min(32, 'JWT_SECRET must be at least 32 characters — generate with: openssl rand -hex 32'),
   JWT_EXPIRES_IN: z.string().default('24h'),
 
+  /**
+   * Overrides the cookie's Secure flag. Left unset it follows NODE_ENV.
+   *
+   * An explicit enum rather than a boolean coercion: `z.coerce.boolean()` treats
+   * every non-empty string as true, so COOKIE_SECURE=false would silently mean
+   * true — the exact opposite of what was written.
+   */
+  COOKIE_SECURE: z
+    .enum(['true', 'false'], { error: 'COOKIE_SECURE must be exactly "true" or "false".' })
+    .optional()
+    .transform((value) => (value === undefined ? undefined : value === 'true')),
+
   CLIENT_ORIGIN: z.string().default('http://localhost:5173'),
 
   SEED_ADMIN_EMAIL: z.string().default('admin@deploylab.local'),

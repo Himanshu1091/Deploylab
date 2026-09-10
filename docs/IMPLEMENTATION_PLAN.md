@@ -456,14 +456,23 @@ using the wrong username, since Ubuntu AMIs use `ubuntu` rather than `ec2-user`.
 CI already exists from Phase 1 — `.github/workflows/ci.yml` builds the client and smoke-tests the server on every pull request. This phase adds the *deploy* half, in a separate workflow that runs only after CI passes on `main`.
 
 - [x] Create the GitHub repository and push
-- [ ] Generate a deploy SSH key pair; the public key goes in the server's `authorized_keys`
+- [x] Generate a deploy SSH key pair; the public key goes in the server's `authorized_keys`
 - [ ] Add GitHub Actions secrets — `SSH_HOST`, `SSH_USER`, `SSH_PRIVATE_KEY`
-- [ ] Write `.github/workflows/deploy.yml`
-- [ ] Workflow steps: checkout, SSH in, `git pull`, `npm ci`, build frontend, `pm2 reload deploylab`
-- [ ] Post-deploy smoke test — curl `/api/health` and fail the job on a non-200
+- [x] Write `.github/workflows/deploy.yml`
+- [x] Workflow steps: checkout, SSH in, `git pull`, `npm ci`, build frontend, `pm2 reload deploylab`
+- [x] Post-deploy smoke test — curl `/api/health` and fail the job on a non-200
 - [ ] Trigger a deployment with a trivial commit and watch it run
 - [ ] Verify zero-downtime by curling in a loop during a reload
-- [ ] Document the rollback procedure — `git checkout <sha>`, rebuild, reload
+- [x] Document the rollback procedure — `git checkout <sha>`, rebuild, reload
+
+**Design decisions**
+
+- Triggered by `workflow_run` on CI completing, not by the push. A push-triggered deploy races the test run and can ship a commit CI is about to fail. The job guards on `conclusion == 'success'`, because `workflow_run` fires on failure too.
+- `concurrency` with `cancel-in-progress: false`. Two deploys must not touch the server at once, and cancelling one mid-flight could leave a half-built tree, so the second waits.
+- `SSH_KNOWN_HOSTS` is pinned. Without it the runner accepts whatever host answers at that address, which is the weakness host key verification exists to close.
+- The smoke test polls `/api/health` for up to twenty seconds rather than sleeping a fixed amount. The app needs a moment to reconnect to the database after a reload.
+- No automatic rollback. Reverting on the server would leave the repository and the running code disagreeing, and the next deploy would silently undo it. `git revert` on main is the supported path.
+- Port 22 is opened to `0.0.0.0/0`, because GitHub runners have dynamic addresses from a large pool. The key is the actual control - passwords and root login are already disabled. The IP allowlist locked the owner out twice in one day while never being what kept attackers out.
 
 **Done when:** a push to `main` reaches production with no manual step, and a failed health check fails the workflow loudly.
 

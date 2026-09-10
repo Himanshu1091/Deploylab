@@ -1,0 +1,116 @@
+name: Deploy
+
+# Triggered by CI finishing, not by the push itself. A push-triggered deploy
+# races the test run and can ship a commit that CI is about to fail.
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+    branches: [main]
+
+  # Manual re-run, for redeploying without a new commit — after a rollback, or
+  # when the server was rebuilt.
+  workflow_dispatch:
+
+# Never let two deploys touch the server at once. A second run waits rather than
+# cancelling, because cancelling mid-deploy could leave a half-built tree.
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy to EC2
+    runs-on: ubuntu-latest
+
+    # workflow_run fires on failure too. Without this guard a red CI run would
+    # still deploy, which defeats the point of gating on it.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success'
+
+    steps:
+      - name: Report what triggered this
+        run: |
+          echo "event: ${{ github.event_name }}"
+          echo "CI conclusion: ${{ github.event.workflow_run.conclusion || 'n/a (manual)' }}"
+          echo "commit: ${{ github.event.workflow_run.head_sha || github.sha }}"
+
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+
+          # Pin the host key rather than accepting whatever answers. Without this
+          # the runner would trust any host at that address, which is the whole
+          # weakness host keys exist to close.
+          echo "${{ secrets.SSH_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Deploy
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+        run: |
+          ssh -i ~/.ssh/deploy_key "$SSH_USER@$SSH_HOST" 'bash -euo pipefail -s' <<'REMOTE'
+            cd ~/deploylab
+
+            echo "::group::Current state"
+            git log --oneline -n 1
+            echo "::endgroup::"
+
+            # --ff-only rather than a plain pull: if the server's tree has
+            # diverged, fail loudly instead of creating a merge commit on a
+            # machine nobody reviews.
+            git fetch --quiet origin main
+            git merge --ff-only origin/main
+
+            echo "::group::Deployed commit"
+            git log --oneline -n 1
+            echo "::endgroup::"
+
+            # ci, not install: installs exactly what the lockfile pins and fails
+            # if the lockfile and package.json disagree.
+            echo "::group::Dependencies"
+            npm --prefix backend ci --no-audit --no-fund
+            npm --prefix frontend ci --no-audit --no-fund
+            echo "::endgroup::"
+
+            echo "::group::Build"
+            npm run build
+            echo "::endgroup::"
+
+            # reload sends SIGTERM, which triggers the graceful shutdown path in
+            # server.js and drains in-flight requests. restart would drop them.
+            pm2 reload deploylab
+          REMOTE
+
+      - name: Smoke test
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+        run: |
+          # Poll rather than sleeping a fixed amount. The app needs a moment to
+          # reconnect to the database after a reload, and a hard sleep is either
+          # too short on a bad day or wasted time on a good one.
+          for attempt in $(seq 1 20); do
+            body=$(curl -fsS --max-time 5 "http://$SSH_HOST/api/health" 2>/dev/null || true)
+
+            if echo "$body" | grep -q '"db":"connected"'; then
+              echo "healthy after ${attempt}s: $body"
+              exit 0
+            fi
+
+            sleep 1
+          done
+
+          echo "::error::Health check never reported a connected database after the deploy"
+          echo "last response: ${body:-<no response>}"
+          exit 1
+
+      - name: Report failure
+        if: failure()
+        run: |
+          echo "::error::Deploy failed. The previous version may still be running."
+          echo "Check: pm2 status && pm2 logs deploylab --lines 50"
+          echo "Roll back with the procedure in docs/DEPLOYMENT.md."

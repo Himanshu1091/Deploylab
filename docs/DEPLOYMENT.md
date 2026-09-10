@@ -533,13 +533,118 @@ _Phase 11._
 
 ---
 
-## 18. CI/CD
+## 18. CD
 
-_Phase 12. Paste the final workflow file here._
+CI already runs on every pull request. This phase adds the deploy half, in
+`.github/workflows/deploy.yml`.
+
+It performs no new steps — it is the manual sequence from **Deploying a Change**
+below, run by a machine. That ordering was deliberate: having run it by hand a
+dozen times, a failure in the pipeline is recognisable rather than mysterious.
+
+### Access
+
+The runner needs SSH to the server, and GitHub's runners have **dynamic IP
+addresses from a very large pool**. A security group rule limited to one address
+blocks them permanently.
+
+This deployment opens port 22 to `0.0.0.0/0`. The real control is the key:
+password authentication is disabled, root login is off, and only two public keys
+are authorised. The IP allowlist was always convenience — it locked the owner out
+twice in one day when their ISP rotated their address, while never being the
+thing keeping attackers out.
+
+Expect brute-force attempts in `/var/log/auth.log`. They cannot succeed without a
+private key. `fail2ban` quiets the noise if it becomes tiresome.
+
+Alternatives, if an open port 22 is unacceptable: a self-hosted runner on the box
+(no inbound SSH, but the runner holds repository credentials), or a pull-based
+deploy where the server polls for new commits.
+
+### Key
+
+A **separate** key for Actions, not the `.pem` used for interactive access:
+
+```bash
+ssh-keygen -t ed25519 -f gha_deploy -N '' -C 'github-actions-deploylab'
+```
+
+Append the public half to `~/.ssh/authorized_keys` on the server. Two credentials
+for two purposes means either can be revoked without losing the other — remove
+the Actions key and your own access is untouched.
+
+### Secrets
+
+Repository → Settings → Secrets and variables → Actions.
+
+| Secret | Value |
+|---|---|
+| `SSH_HOST` | The Elastic IP |
+| `SSH_USER` | `deploy` |
+| `SSH_PRIVATE_KEY` | Whole contents of `gha_deploy`, including the BEGIN and END lines |
+| `SSH_KNOWN_HOSTS` | Output of `ssh-keyscan -t ed25519 <ip>`, or the matching line from your own `~/.ssh/known_hosts` |
+
+`SSH_KNOWN_HOSTS` matters more than it looks. Without it the runner would have to
+accept whatever host answers at that address, which is exactly what host key
+verification exists to prevent.
+
+### Why it triggers on CI, not on push
 
 ```yaml
-# placeholder
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+    branches: [main]
 ```
+
+A push-triggered deploy races the test run and can ship a commit CI is about to
+fail. `workflow_run` fires when CI finishes — including when it *fails*, so the
+job guards on the conclusion:
+
+```yaml
+if: github.event.workflow_run.conclusion == 'success'
+```
+
+Omit that guard and a red build deploys anyway, which defeats the point.
+
+`workflow_dispatch` is also enabled, for redeploying without a new commit — after
+a rollback, or when the server has been rebuilt.
+
+### Concurrency
+
+```yaml
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+```
+
+Two deploys must never touch the server at once. Cancelling is *not* wanted here:
+a cancelled deploy could leave a half-built tree, so a second run waits instead.
+
+### Smoke test
+
+The deploy is not finished when `pm2 reload` returns. The job polls
+`/api/health` until it reports `db: connected`, up to twenty seconds.
+
+Polling rather than a fixed sleep: the app needs a moment to re-establish the
+database connection after a reload, and a fixed wait is either too short on a bad
+day or wasted time on a good one. A deploy that leaves the service unhealthy
+fails the workflow loudly rather than reporting success.
+
+### Rollback
+
+The workflow has no automatic rollback — that is a deliberate limit. Reverting on
+the server would leave the repository and the running code disagreeing, and the
+next deploy would silently undo it.
+
+Two honest options:
+
+**Revert the commit.** Preferred. `git revert` on `main`, which re-runs CI and
+redeploys through the normal path, leaving history and the server in agreement.
+
+**Manual, for an emergency.** See **Rollback** below. Follow it with a real
+revert, or the next deploy puts the broken version back.
 
 ---
 

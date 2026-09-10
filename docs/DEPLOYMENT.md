@@ -669,6 +669,32 @@ revert, or the next deploy puts the broken version back.
 
 ---
 
+## 19. Log Rotation
+
+pm2 writes to `~/.pm2/logs/` and never truncates. On a box this size an error
+loop could fill the disk, and a full disk on Linux fails in several directions at
+once: `apt` breaks mid-upgrade, nginx refuses to start, pm2 cannot write.
+
+```bash
+pm2 install pm2-logrotate
+
+pm2 set pm2-logrotate:max_size 10M
+pm2 set pm2-logrotate:retain 7
+pm2 set pm2-logrotate:compress true
+pm2 set pm2-logrotate:rotateInterval '0 0 * * *'
+
+pm2 save
+```
+
+Rotates when a file reaches 10 MB or at midnight, whichever comes first, keeping
+seven compressed generations — roughly 70 MB before compression, against 9.6 GB
+free.
+
+The module is restored by `pm2 resurrect` on boot along with the app, so it needs
+no separate startup handling.
+
+---
+
 ## Routine Operations
 
 | Task | Command |

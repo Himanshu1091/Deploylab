@@ -582,11 +582,32 @@ Repository → Settings → Secrets and variables → Actions.
 | `SSH_HOST` | The Elastic IP |
 | `SSH_USER` | `deploy` |
 | `SSH_PRIVATE_KEY` | Whole contents of `gha_deploy`, including the BEGIN and END lines |
-| `SSH_KNOWN_HOSTS` | Output of `ssh-keyscan -t ed25519 <ip>`, or the matching line from your own `~/.ssh/known_hosts` |
 
-`SSH_KNOWN_HOSTS` matters more than it looks. Without it the runner would have to
-accept whatever host answers at that address, which is exactly what host key
+### Host key pinning
+
+The runner must verify it is talking to the right server. Without that it would
+accept whatever host answers at the address, which is precisely what host key
 verification exists to prevent.
+
+The server's host key is **pinned in the workflow file**, not stored as a secret.
+A host *public* key is not secret — anyone can ask the server for it — and
+keeping it in the file has two advantages: it is reviewable in a diff, and
+replacing it requires a deliberate code change rather than a silent secret edit.
+
+The first attempt did use a secret, and it failed with `Host key verification
+failed` on the very first run. The key value was correct on the server and in the
+instructions, so the fault was somewhere in the copy into the secret box —
+invisible, and unpleasant to debug through CI runs. Putting the value in the file
+removed the entire failure mode.
+
+Regenerate it after rebuilding the server:
+
+```bash
+ssh-keyscan -t ed25519 <ip>
+```
+
+The Configure SSH step prints both the pinned fingerprint and the one the server
+currently presents, so a mismatch is obvious in a single run.
 
 ### Why it triggers on CI, not on push
 

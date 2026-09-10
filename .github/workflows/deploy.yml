@@ -37,16 +37,33 @@ jobs:
           echo "commit: ${{ github.event.workflow_run.head_sha || github.sha }}"
 
       - name: Configure SSH
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key
+          chmod 700 ~/.ssh
+
+          printf '%s\n' "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
 
-          # Pin the host key rather than accepting whatever answers. Without this
-          # the runner would trust any host at that address, which is the whole
-          # weakness host keys exist to close.
-          echo "${{ secrets.SSH_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+          # The server's host key, pinned. A host *public* key is not a secret —
+          # anyone can ask the server for it — so it lives here rather than in a
+          # secret. Two reasons that is better: it is reviewable in a diff, and a
+          # changed host key then requires a deliberate code change instead of a
+          # silent secret edit.
+          #
+          # Regenerate after rebuilding the server:
+          #   ssh-keyscan -t ed25519 <ip>
+          printf '%s ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIL0o7eN+q/N8y0P32+gRwtBH5afpKgUddX7U6N5Llr19\n' \
+            "$SSH_HOST" > ~/.ssh/known_hosts
           chmod 600 ~/.ssh/known_hosts
+
+          # Diagnostics, so a mismatch is obvious in one run rather than three.
+          echo "pinned fingerprint:"
+          ssh-keygen -lf ~/.ssh/known_hosts
+          echo "server currently presents:"
+          ssh-keyscan -t ed25519 "$SSH_HOST" 2>/dev/null | ssh-keygen -lf - \
+            || echo "::warning::could not scan the server's host key"
 
       - name: Deploy
         env:

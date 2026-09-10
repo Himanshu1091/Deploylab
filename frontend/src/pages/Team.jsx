@@ -4,10 +4,15 @@ import { getTeam } from '../api/users.api.js';
 import { RoleBadge, StatusBadge } from '../components/ui/Badge.jsx';
 import { TableScroll } from '../components/ui/Table.jsx';
 import { EmptyState, ErrorState, LoadingState } from '../components/ui/States.jsx';
+import { usePageHeader, TopbarActions } from '../context/PageHeaderContext.jsx';
+import { initials } from '../utils/initials.js';
 import { formatDate } from '../utils/formatDate.js';
 
 export default function Team() {
   const [state, setState] = useState({ status: 'loading', data: null, error: null });
+
+  // Before the early returns below, or the hook order changes between renders.
+  usePageHeader('My Team', 'Your direct reports. This view is read-only.');
 
   const load = useCallback(async () => {
     setState({ status: 'loading', data: null, error: null });
@@ -30,13 +35,12 @@ export default function Team() {
 
   return (
     <div className="page">
-      <h1 className="page__title">My Team</h1>
-      <p className="page__lead">
-        {count === 1 ? '1 direct report.' : `${count} direct reports.`}
-      </p>
+      <TopbarActions>
+        <span className="count-pill">{count === 1 ? '1 report' : `${count} reports`}</span>
+      </TopbarActions>
 
-      {/* An empty team is the default state for a newly promoted manager, so it
-          gets an explanation rather than anything that looks like a failure. */}
+      {/* An empty team is the default state for a newly promoted manager, so
+          it gets an explanation rather than anything that looks like failure. */}
       {count === 0 ? (
         <EmptyState
           title="No team members assigned yet."
@@ -49,7 +53,6 @@ export default function Team() {
               <thead>
                 <tr>
                   <th scope="col">Name</th>
-                  <th scope="col">Email</th>
                   <th scope="col">Role</th>
                   <th scope="col">Status</th>
                   <th scope="col">Joined</th>
@@ -58,8 +61,17 @@ export default function Team() {
               <tbody>
                 {team.map((member) => (
                   <tr key={member.id}>
-                    <td>{member.name}</td>
-                    <td className="cell--muted">{member.email}</td>
+                    <td>
+                      <div className="person">
+                        <span className="avatar" aria-hidden="true">
+                          {initials(member.name)}
+                        </span>
+                        <div className="person__text">
+                          <span className="person__name">{member.name}</span>
+                          <span className="person__email">{member.email}</span>
+                        </div>
+                      </div>
+                    </td>
                     <td>
                       <RoleBadge role={member.role} />
                     </td>
@@ -74,8 +86,6 @@ export default function Team() {
           </TableScroll>
         </section>
       )}
-
-      <p className="muted">This view is read-only.</p>
     </div>
   );
 }

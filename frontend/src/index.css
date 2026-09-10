@@ -1,37 +1,207 @@
-/* ------------------------------------------------------------------ tokens */
+/* ==========================================================================
+   Deploylab
+
+   Tokens sit in two layers. A raw palette on :root never changes; semantic
+   tokens map roles onto that palette and are the only thing components
+   reference. Dark mode then only has to remap the semantic layer, so a
+   component never needs to know which theme it is in.
+   ========================================================================== */
 
 :root {
-  --bg: #f6f7f9;
+  /* ---- palette ------------------------------------------------------- */
+
+  /* Cool neutrals. A true grey reads as dead next to a saturated accent; a
+     hint of blue keeps the whole surface coherent. */
+  --slate-50:  #f8fafc;
+  --slate-100: #f1f5f9;
+  --slate-200: #e2e8f0;
+  --slate-300: #cbd5e1;
+  --slate-400: #94a3b8;
+  --slate-500: #64748b;
+  --slate-600: #475569;
+  --slate-700: #334155;
+  --slate-800: #1e293b;
+  --slate-900: #0f172a;
+  --slate-950: #020617;
+
+  --indigo-50:  #eef2ff;
+  --indigo-200: #c7d2fe;
+  --indigo-400: #818cf8;
+  --indigo-500: #6366f1;
+  --indigo-600: #4f46e5;
+  --indigo-700: #4338ca;
+
+  --emerald-50:  #ecfdf5;
+  --emerald-700: #047857;
+
+  --amber-50:  #fffbeb;
+  --amber-700: #b45309;
+
+  --rose-50:  #fff1f2;
+  --rose-600: #e11d48;
+  --rose-700: #be123c;
+
+  /* ---- semantic: light ----------------------------------------------- */
+
+  --bg: var(--slate-100);
   --surface: #ffffff;
-  --surface-alt: #f9fafb;
-  --border: #e3e6ec;
-  --border-strong: #cbd2dc;
+  --surface-2: var(--slate-50);
+  --surface-hover: var(--slate-100);
 
-  --text: #16191f;
-  --text-muted: #646d7c;
+  --border: var(--slate-200);
+  --border-strong: var(--slate-300);
+  --border-hover: var(--slate-400);
 
-  --accent: #2f5bd7;
-  --accent-hover: #2549b0;
-  --accent-soft: #eaf0fe;
+  --text: var(--slate-900);
+  --text-secondary: var(--slate-600);
+  --text-muted: var(--slate-500);
+  --text-inverse: #ffffff;
 
-  --good: #14713b;
-  --good-soft: #e6f4ec;
-  --bad: #b3261e;
-  --bad-soft: #fdeceb;
-  --warn: #8a5a00;
-  --warn-soft: #fdf3e2;
+  --accent: var(--indigo-600);
+  --accent-hover: var(--indigo-700);
+  --accent-soft: var(--indigo-50);
+  --accent-border: var(--indigo-200);
+  --accent-text: var(--indigo-700);
 
-  --radius: 10px;
+  --success: var(--emerald-700);
+  --success-soft: var(--emerald-50);
+  --warning: var(--amber-700);
+  --warning-soft: var(--amber-50);
+  --danger: var(--rose-600);
+  --danger-hover: var(--rose-700);
+  --danger-soft: var(--rose-50);
+
+  /* Layered, not one blur. Depth comes from a tight contact shadow plus a
+     wider ambient one; a single large blur reads as fog. */
+  --shadow-sm: 0 1px 2px rgb(15 23 42 / 0.06), 0 1px 1px rgb(15 23 42 / 0.04);
+  --shadow: 0 1px 3px rgb(15 23 42 / 0.08), 0 4px 12px rgb(15 23 42 / 0.06);
+  --shadow-lg: 0 2px 6px rgb(15 23 42 / 0.08), 0 12px 32px rgb(15 23 42 / 0.14);
+
+  --ring: 0 0 0 3px rgb(99 102 241 / 0.35);
+  --ring-danger: 0 0 0 3px rgb(244 63 94 / 0.32);
+
+  /* ---- scale ---------------------------------------------------------- */
+
   --radius-sm: 6px;
-  --shadow: 0 1px 2px rgba(16, 24, 40, 0.05), 0 4px 12px rgba(16, 24, 40, 0.05);
+  --radius: 10px;
+  --radius-lg: 14px;
+  --radius-full: 999px;
+
+  --ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --fast: 130ms;
+  --normal: 200ms;
 
   color-scheme: light;
-  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+
+  font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto,
+    'Helvetica Neue', Arial, sans-serif;
+  font-size: 16px;
   line-height: 1.55;
   color: var(--text);
+
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
-* {
+/* ---- semantic: dark ---------------------------------------------------- */
+
+/* Two selectors, deliberately. The media query handles "system"; the
+   attribute handles an explicit choice and must win over it. Written as
+   :root:not([data-theme='light']) so that picking light beats a dark OS. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    /* Not pure black. A near-black with a blue cast stops shadows and
+       accents reading as holes punched in the page. */
+    --bg: var(--slate-950);
+    --surface: var(--slate-900);
+    --surface-2: #0b1220;
+    --surface-hover: var(--slate-800);
+
+    --border: #1e2a3f;
+    --border-strong: var(--slate-700);
+    --border-hover: var(--slate-600);
+
+    --text: var(--slate-100);
+    --text-secondary: var(--slate-400);
+    --text-muted: var(--slate-500);
+    --text-inverse: var(--slate-950);
+
+    /* Lifted: a mid-tone accent that works on white loses contrast against a
+       dark surface. */
+    --accent: var(--indigo-500);
+    --accent-hover: var(--indigo-400);
+    --accent-soft: rgb(99 102 241 / 0.14);
+    --accent-border: rgb(99 102 241 / 0.35);
+    --accent-text: var(--indigo-200);
+
+    --success: #34d399;
+    --success-soft: rgb(16 185 129 / 0.14);
+    --warning: #fbbf24;
+    --warning-soft: rgb(245 158 11 / 0.14);
+    --danger: #fb7185;
+    --danger-hover: #fda4af;
+    --danger-soft: rgb(244 63 94 / 0.14);
+
+    /* Deeper and more diffuse. On a dark ground a shadow reads as absent
+       light rather than a drop, so it needs more spread to be believable. */
+    --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.4);
+    --shadow: 0 2px 6px rgb(0 0 0 / 0.45), 0 8px 24px rgb(0 0 0 / 0.35);
+    --shadow-lg: 0 4px 12px rgb(0 0 0 / 0.5), 0 24px 56px rgb(0 0 0 / 0.5);
+
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme='dark'] {
+    /* Not pure black. A near-black with a blue cast stops shadows and
+       accents reading as holes punched in the page. */
+    --bg: var(--slate-950);
+    --surface: var(--slate-900);
+    --surface-2: #0b1220;
+    --surface-hover: var(--slate-800);
+
+    --border: #1e2a3f;
+    --border-strong: var(--slate-700);
+    --border-hover: var(--slate-600);
+
+    --text: var(--slate-100);
+    --text-secondary: var(--slate-400);
+    --text-muted: var(--slate-500);
+    --text-inverse: var(--slate-950);
+
+    /* Lifted: a mid-tone accent that works on white loses contrast against a
+       dark surface. */
+    --accent: var(--indigo-500);
+    --accent-hover: var(--indigo-400);
+    --accent-soft: rgb(99 102 241 / 0.14);
+    --accent-border: rgb(99 102 241 / 0.35);
+    --accent-text: var(--indigo-200);
+
+    --success: #34d399;
+    --success-soft: rgb(16 185 129 / 0.14);
+    --warning: #fbbf24;
+    --warning-soft: rgb(245 158 11 / 0.14);
+    --danger: #fb7185;
+    --danger-hover: #fda4af;
+    --danger-soft: rgb(244 63 94 / 0.14);
+
+    /* Deeper and more diffuse. On a dark ground a shadow reads as absent
+       light rather than a drop, so it needs more spread to be believable. */
+    --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.4);
+    --shadow: 0 2px 6px rgb(0 0 0 / 0.45), 0 8px 24px rgb(0 0 0 / 0.35);
+    --shadow-lg: 0 4px 12px rgb(0 0 0 / 0.5), 0 24px 56px rgb(0 0 0 / 0.5);
+
+    color-scheme: dark;
+}
+
+/* ==========================================================================
+   base
+   ========================================================================== */
+
+*,
+*::before,
+*::after {
   box-sizing: border-box;
 }
 
@@ -39,13 +209,56 @@ body {
   margin: 0;
   min-height: 100vh;
   background: var(--bg);
+  color: var(--text);
+}
+
+h1, h2, h3 {
+  /* Negative tracking on large type only. Headings at default spacing look
+     loose; body text set tight becomes harder to read. */
+  letter-spacing: -0.021em;
+  line-height: 1.2;
+  font-weight: 650;
+  margin: 0;
 }
 
 a {
   color: var(--accent);
+  text-decoration-color: color-mix(in srgb, var(--accent) 35%, transparent);
+  text-underline-offset: 2px;
+  transition: color var(--fast) var(--ease);
 }
 
-/* ----------------------------------------------------------------- spinner */
+a:hover {
+  color: var(--accent-hover);
+  text-decoration-color: currentColor;
+}
+
+/* One focus treatment everywhere. Never remove it without replacing it --
+   keyboard users navigate entirely by this. */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+::selection {
+  background: var(--accent-soft);
+  color: var(--accent-text);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ==========================================================================
+   spinner
+   ========================================================================== */
 
 .spinner {
   display: inline-block;
@@ -54,7 +267,7 @@ a {
   border: 2px solid var(--border-strong);
   border-top-color: var(--accent);
   border-radius: 50%;
-  animation: spin 0.7s linear infinite;
+  animation: spin 0.65s linear infinite;
 }
 
 .full-page-spinner {
@@ -64,70 +277,105 @@ a {
 }
 
 @keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
+  to { transform: rotate(360deg); }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .spinner {
-    animation-duration: 2s;
-  }
-}
-
-/* ----------------------------------------------------------------- buttons */
+/* ==========================================================================
+   buttons
+   ========================================================================== */
 
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  padding: 0.55rem 1rem;
+
+  padding: 0.5rem 0.95rem;
+  min-height: 2.25rem;
+
   border: 1px solid transparent;
   border-radius: var(--radius-sm);
+
   font: inherit;
-  font-weight: 500;
+  font-size: 0.9rem;
+  font-weight: 550;
+  line-height: 1;
+  white-space: nowrap;
+
   cursor: pointer;
-  transition: background-color 0.15s, border-color 0.15s;
+  transition:
+    background-color var(--fast) var(--ease),
+    border-color var(--fast) var(--ease),
+    color var(--fast) var(--ease),
+    box-shadow var(--fast) var(--ease),
+    transform var(--fast) var(--ease);
+}
+
+/* A 1px press. Enough to read as tactile, not enough to look like the
+   layout shifting. */
+.btn:active:not(:disabled) {
+  transform: translateY(1px);
 }
 
 .btn:disabled {
-  opacity: 0.6;
+  opacity: 0.55;
   cursor: not-allowed;
-}
-
-.btn:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
 }
 
 .btn--primary {
   background: var(--accent);
-  color: #fff;
+  color: var(--text-inverse);
+  box-shadow: var(--shadow-sm);
 }
 
 .btn--primary:hover:not(:disabled) {
   background: var(--accent-hover);
+  box-shadow: var(--shadow);
+}
+
+.btn--primary:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
 }
 
 .btn--secondary {
   background: var(--surface);
   border-color: var(--border-strong);
   color: var(--text);
+  box-shadow: var(--shadow-sm);
 }
 
 .btn--secondary:hover:not(:disabled) {
-  background: var(--surface-alt);
+  background: var(--surface-hover);
+  border-color: var(--border-hover);
 }
 
 .btn--ghost {
   background: transparent;
-  color: var(--text-muted);
+  color: var(--text-secondary);
 }
 
 .btn--ghost:hover:not(:disabled) {
-  background: var(--surface-alt);
+  background: var(--surface-hover);
   color: var(--text);
+}
+
+/* Destructive actions get their own colour. Wording alone asks people to
+   read carefully at exactly the moment they are clicking quickly. */
+.btn--danger {
+  background: var(--danger);
+  color: #fff;
+  box-shadow: var(--shadow-sm);
+}
+
+.btn--danger:hover:not(:disabled) {
+  background: var(--danger-hover);
+  box-shadow: var(--shadow);
+}
+
+.btn--danger:focus-visible {
+  outline: none;
+  box-shadow: var(--ring-danger);
 }
 
 .btn--full {
@@ -135,243 +383,275 @@ a {
 }
 
 .btn__spinner {
-  width: 0.9rem;
-  height: 0.9rem;
+  width: 0.85rem;
+  height: 0.85rem;
   border: 2px solid currentColor;
   border-top-color: transparent;
   border-radius: 50%;
-  animation: spin 0.7s linear infinite;
+  animation: spin 0.65s linear infinite;
 }
 
-/* ------------------------------------------------------------------ fields */
+/* ==========================================================================
+   form fields
+   ========================================================================== */
 
 .field {
-  margin-bottom: 1rem;
+  margin-bottom: 1.1rem;
 }
 
 .field__label {
   display: block;
-  margin-bottom: 0.3rem;
-  font-size: 0.875rem;
-  font-weight: 500;
+  margin-bottom: 0.4rem;
+  font-size: 0.8125rem;
+  font-weight: 550;
+  color: var(--text-secondary);
 }
 
 .field__input {
   width: 100%;
-  padding: 0.55rem 0.7rem;
+  padding: 0.55rem 0.75rem;
+  min-height: 2.4rem;
+
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-sm);
   background: var(--surface);
+  color: var(--text);
+
   font: inherit;
-  color: inherit;
+  font-size: 0.925rem;
+
+  transition:
+    border-color var(--fast) var(--ease),
+    box-shadow var(--fast) var(--ease),
+    background-color var(--fast) var(--ease);
+}
+
+.field__input::placeholder {
+  color: var(--text-muted);
+}
+
+.field__input:hover:not(:focus):not(:disabled) {
+  border-color: var(--border-hover);
 }
 
 .field__input:focus {
-  outline: 2px solid var(--accent);
-  outline-offset: -1px;
+  outline: none;
   border-color: var(--accent);
+  box-shadow: var(--ring);
 }
 
 .field__input--error {
-  border-color: var(--bad);
+  border-color: var(--danger);
+}
+
+.field__input--error:focus {
+  box-shadow: var(--ring-danger);
+}
+
+.field__input:disabled {
+  background: var(--surface-2);
+  color: var(--text-muted);
+  cursor: not-allowed;
 }
 
 .field__error,
 .field__hint {
-  margin: 0.3rem 0 0;
+  margin: 0.4rem 0 0;
   font-size: 0.8125rem;
+  line-height: 1.45;
 }
 
 .field__error {
-  color: var(--bad);
+  color: var(--danger);
 }
 
 .field__hint {
   color: var(--text-muted);
 }
 
-/* ------------------------------------------------------------------ badges */
+/* ==========================================================================
+   badges
+   ========================================================================== */
 
 .badge {
-  display: inline-block;
-  padding: 0.1rem 0.5rem;
-  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.15rem 0.55rem;
+
+  border: 1px solid transparent;
+  border-radius: var(--radius-full);
+
   font-size: 0.75rem;
   font-weight: 600;
-  letter-spacing: 0.01em;
+  line-height: 1.4;
+  white-space: nowrap;
 }
 
 .badge--admin {
   background: var(--accent-soft);
-  color: var(--accent-hover);
+  border-color: var(--accent-border);
+  color: var(--accent-text);
 }
 
 .badge--manager {
-  background: var(--warn-soft);
-  color: var(--warn);
+  background: var(--warning-soft);
+  border-color: color-mix(in srgb, var(--warning) 30%, transparent);
+  color: var(--warning);
 }
 
-.badge--employee,
-.badge--inactive {
-  background: var(--surface-alt);
-  color: var(--text-muted);
-  border: 1px solid var(--border);
+.badge--employee {
+  background: var(--surface-2);
+  border-color: var(--border);
+  color: var(--text-secondary);
 }
 
 .badge--active {
-  background: var(--good-soft);
-  color: var(--good);
+  background: var(--success-soft);
+  border-color: color-mix(in srgb, var(--success) 30%, transparent);
+  color: var(--success);
 }
 
-/* ----------------------------------------------------------------- banners */
+.badge--inactive {
+  background: var(--surface-2);
+  border-color: var(--border);
+  color: var(--text-muted);
+}
+
+/* ==========================================================================
+   banners
+   ========================================================================== */
 
 .banner {
-  margin: 0 0 1rem;
-  padding: 0.65rem 0.85rem;
+  margin: 0 0 1.15rem;
+  padding: 0.7rem 0.9rem;
+
+  border: 1px solid transparent;
   border-radius: var(--radius-sm);
+
   font-size: 0.9rem;
+  line-height: 1.5;
 }
 
+/* A weighted left edge as well as a tint. Colour alone is not a signal for
+   anyone with a colour vision deficiency; a border weight difference is. */
 .banner--error {
-  background: var(--bad-soft);
-  color: var(--bad);
+  background: var(--danger-soft);
+  border-color: color-mix(in srgb, var(--danger) 28%, transparent);
+  border-left: 3px solid var(--danger);
+  color: var(--danger);
 }
 
 .banner--warning {
-  background: var(--warn-soft);
-  color: var(--warn);
+  background: var(--warning-soft);
+  border-color: color-mix(in srgb, var(--warning) 28%, transparent);
+  border-left: 3px solid var(--warning);
+  color: var(--warning);
 }
 
-/* ------------------------------------------------------------------ toasts */
+/* ==========================================================================
+   toasts
+   ========================================================================== */
 
 .toasts {
   position: fixed;
-  right: 1rem;
-  bottom: 1rem;
+  right: 1.15rem;
+  bottom: 1.15rem;
+  z-index: 60;
+
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-  z-index: 50;
+  gap: 0.55rem;
 }
 
 .toast {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.6rem 0.85rem;
-  border-radius: var(--radius-sm);
-  box-shadow: var(--shadow);
+  gap: 0.85rem;
+
+  padding: 0.7rem 0.9rem;
+  max-width: 23rem;
+
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+
   font-size: 0.9rem;
-  max-width: 22rem;
+  font-weight: 500;
+
+  animation: toast-in 220ms var(--ease);
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.97);
+  }
 }
 
 .toast--success {
-  background: var(--good-soft);
-  color: var(--good);
+  background: var(--surface);
+  border-color: color-mix(in srgb, var(--success) 35%, var(--border));
+  border-left: 3px solid var(--success);
+  color: var(--success);
 }
 
 .toast--error {
-  background: var(--bad-soft);
-  color: var(--bad);
+  background: var(--surface);
+  border-color: color-mix(in srgb, var(--danger) 35%, var(--border));
+  border-left: 3px solid var(--danger);
+  color: var(--danger);
 }
 
 .toast__close {
   margin-left: auto;
+  padding: 0 0.15rem;
+
   border: 0;
   background: none;
   color: inherit;
-  font-size: 1.1rem;
+  opacity: 0.6;
+
+  font-size: 1.15rem;
   line-height: 1;
   cursor: pointer;
+
+  transition: opacity var(--fast) var(--ease);
 }
 
-/* ------------------------------------------------------------------- shell */
-
-.shell {
-  min-height: 100vh;
+.toast__close:hover {
+  opacity: 1;
 }
 
-.shell__header {
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
+/* ==========================================================================
+   pages
+   ========================================================================== */
+
+.page {
+  animation: page-in 260ms var(--ease);
 }
 
-.shell__header-inner {
-  max-width: 68rem;
-  margin: 0 auto;
-  padding: 0.75rem 1.25rem;
-  display: flex;
-  align-items: center;
-  gap: 1.5rem;
-  flex-wrap: wrap;
+@keyframes page-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
 }
-
-.wordmark {
-  font-weight: 700;
-  font-size: 1.05rem;
-  letter-spacing: -0.01em;
-  color: var(--text);
-  text-decoration: none;
-}
-
-.nav {
-  display: flex;
-  gap: 0.25rem;
-}
-
-.nav__link {
-  padding: 0.35rem 0.6rem;
-  border-radius: var(--radius-sm);
-  font-size: 0.9rem;
-  color: var(--text-muted);
-  text-decoration: none;
-}
-
-.nav__link:hover {
-  background: var(--surface-alt);
-  color: var(--text);
-}
-
-.nav__link--active {
-  background: var(--accent-soft);
-  color: var(--accent-hover);
-  font-weight: 500;
-}
-
-.shell__user {
-  margin-left: auto;
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-}
-
-.shell__user-name {
-  font-size: 0.9rem;
-  font-weight: 500;
-}
-
-.shell__main {
-  max-width: 68rem;
-  margin: 0 auto;
-  padding: 2rem 1.25rem;
-}
-
-/* ------------------------------------------------------------------- pages */
 
 .page__title {
-  margin: 0 0 0.25rem;
+  margin: 0 0 0.3rem;
   font-size: 1.6rem;
-  letter-spacing: -0.02em;
 }
 
 .page__lead {
-  margin: 0 0 1.5rem;
-  color: var(--text-muted);
+  margin: 0 0 1.75rem;
+  max-width: 46rem;
+  color: var(--text-secondary);
+  font-size: 0.95rem;
 }
 
 .page--centered {
-  text-align: center;
   padding-top: 5rem;
+  text-align: center;
 }
 
 .muted {
@@ -379,26 +659,38 @@ a {
   font-size: 0.875rem;
 }
 
-/* ------------------------------------------------------------------- cards */
+/* ==========================================================================
+   cards
+   ========================================================================== */
 
 .card {
+  margin-bottom: 1.35rem;
+  padding: 1.35rem;
+
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 1.25rem;
-  margin-bottom: 1.25rem;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.card--flush {
+  padding: 0;
+  overflow: hidden;
 }
 
 .card__title {
-  margin: 0 0 1rem;
-  font-size: 0.95rem;
-  font-weight: 600;
+  margin: 0 0 1.15rem;
+  font-size: 0.8125rem;
+  font-weight: 650;
+  letter-spacing: 0.045em;
+  text-transform: uppercase;
+  color: var(--text-muted);
 }
 
 .detail-list {
   display: grid;
-  grid-template-columns: 8rem 1fr;
-  gap: 0.5rem 1rem;
+  grid-template-columns: 9rem 1fr;
+  gap: 0.75rem 1.25rem;
   margin: 0;
   font-size: 0.925rem;
 }
@@ -409,100 +701,70 @@ a {
 
 .detail-list dd {
   margin: 0;
-}
-
-/* ------------------------------------------------------------------ states */
-
-.state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 3rem 1rem;
-  text-align: center;
-}
-
-.state__title {
-  margin: 0;
   font-weight: 500;
 }
 
-.state__description {
-  margin: 0;
-  color: var(--text-muted);
-  font-size: 0.9rem;
-  max-width: 28rem;
-}
+/* ==========================================================================
+   stats
+   ========================================================================== */
 
-/* -------------------------------------------------------------- auth pages */
-
-.auth {
-  min-height: 100vh;
+.stats {
   display: grid;
-  place-items: center;
-  padding: 1.25rem;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: 0.85rem;
+  margin-bottom: 1.75rem;
 }
 
-.auth__card {
-  width: 100%;
-  max-width: 22rem;
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+
+  padding: 1.1rem 1.15rem;
+
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: var(--radius);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+
+  color: inherit;
+  text-decoration: none;
+
+  transition:
+    border-color var(--normal) var(--ease),
+    box-shadow var(--normal) var(--ease),
+    transform var(--normal) var(--ease);
+}
+
+.stat--link:hover {
+  border-color: var(--accent-border);
   box-shadow: var(--shadow);
-  padding: 1.75rem;
+  transform: translateY(-2px);
 }
 
-.auth__title {
-  margin: 0 0 0.25rem;
-  font-size: 1.5rem;
-  letter-spacing: -0.02em;
+.stat__value {
+  font-size: 1.65rem;
+  font-weight: 680;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+
+  /* Tabular figures, so a row of numbers lines up and does not shuffle
+     sideways when a count changes. */
+  font-variant-numeric: tabular-nums;
 }
 
-.auth__subtitle {
-  margin: 0 0 1.5rem;
-  color: var(--text-muted);
-  font-size: 0.9rem;
-}
-
-.auth__foot {
-  margin: 1.25rem 0 0;
-  text-align: center;
-  font-size: 0.875rem;
+.stat__label {
+  font-size: 0.8125rem;
   color: var(--text-muted);
 }
 
-/* --------------------------------------------------------------- responsive */
-
-@media (max-width: 40rem) {
-  .shell__header-inner {
-    gap: 0.75rem;
-  }
-
-  .shell__user {
-    width: 100%;
-    margin-left: 0;
-  }
-
-  .detail-list {
-    grid-template-columns: 1fr;
-    gap: 0.15rem;
-  }
-
-  .detail-list dd {
-    margin-bottom: 0.6rem;
-  }
-}
-
-/* ------------------------------------------------------------------ tables */
-
-.card--flush {
-  padding: 0;
-  overflow: hidden;
-}
+/* ==========================================================================
+   tables
+   ========================================================================== */
 
 .table-scroll {
   overflow-x: auto;
+  scrollbar-color: var(--border-strong) transparent;
 }
 
 .table {
@@ -514,30 +776,40 @@ a {
 
 .table th,
 .table td {
-  padding: 0.7rem 1rem;
+  padding: 0.75rem 1.15rem;
   text-align: left;
   border-bottom: 1px solid var(--border);
 }
 
 .table th {
-  background: var(--surface-alt);
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--text-muted);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+
+  background: var(--surface-2);
+
+  font-size: 0.725rem;
+  font-weight: 650;
+  letter-spacing: 0.055em;
   text-transform: uppercase;
-  letter-spacing: 0.03em;
+  color: var(--text-muted);
+}
+
+.table tbody tr {
+  transition: background-color var(--fast) var(--ease);
+}
+
+.table tbody tr:hover {
+  background: var(--surface-hover);
 }
 
 .table tbody tr:last-child td {
   border-bottom: 0;
 }
 
-.table tbody tr:hover td {
-  background: var(--surface-alt);
-}
-
 .row--busy {
-  opacity: 0.55;
+  opacity: 0.5;
+  pointer-events: none;
 }
 
 .cell--muted {
@@ -545,27 +817,46 @@ a {
 }
 
 .tag {
-  margin-left: 0.4rem;
-  padding: 0.05rem 0.35rem;
-  border-radius: 999px;
-  background: var(--surface-alt);
+  margin-left: 0.45rem;
+  padding: 0.05rem 0.4rem;
+
+  background: var(--surface-2);
   border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+
   font-size: 0.7rem;
+  font-weight: 500;
   color: var(--text-muted);
 }
 
 .select-inline {
-  padding: 0.3rem 0.4rem;
+  padding: 0.35rem 0.5rem;
+
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-sm);
   background: var(--surface);
+  color: var(--text);
+
   font: inherit;
   font-size: 0.875rem;
-  color: inherit;
+
+  transition:
+    border-color var(--fast) var(--ease),
+    box-shadow var(--fast) var(--ease);
+}
+
+.select-inline:hover:not(:disabled) {
+  border-color: var(--border-hover);
+}
+
+.select-inline:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: var(--ring);
 }
 
 .select-inline:disabled {
-  background: var(--surface-alt);
+  background: var(--surface-2);
   color: var(--text-muted);
   cursor: not-allowed;
 }
@@ -573,8 +864,16 @@ a {
 .switch {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.45rem;
   font-size: 0.875rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.switch input {
+  accent-color: var(--accent);
+  width: 1rem;
+  height: 1rem;
   cursor: pointer;
 }
 
@@ -582,116 +881,899 @@ a {
   cursor: not-allowed;
 }
 
-/* ----------------------------------------------------------------- toolbar */
+/* ==========================================================================
+   toolbar and pagination
+   ========================================================================== */
 
 .toolbar {
   display: flex;
-  gap: 0.6rem;
-  margin-bottom: 1rem;
+  gap: 0.65rem;
   flex-wrap: wrap;
+  margin-bottom: 1.15rem;
 }
 
 .toolbar__search {
-  flex: 1 1 16rem;
+  flex: 1 1 17rem;
 }
 
 .toolbar__filter {
   flex: 0 0 auto;
   width: auto;
+  cursor: pointer;
 }
-
-/* -------------------------------------------------------------- pagination */
 
 .pagination {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  margin-top: 1rem;
   flex-wrap: wrap;
+  margin-top: 1.15rem;
 }
 
 .button-row {
   display: flex;
-  gap: 0.5rem;
-  margin-top: 1rem;
+  gap: 0.55rem;
+  margin-top: 1.15rem;
 }
 
 .pagination .button-row {
   margin-top: 0;
 }
 
-/* ------------------------------------------------------------------- stats */
+/* ==========================================================================
+   states
+   ========================================================================== */
 
-.stats {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
-  gap: 0.75rem;
-  margin-bottom: 1.5rem;
-}
-
-.stat {
+.state {
   display: flex;
   flex-direction: column;
-  gap: 0.15rem;
-  padding: 1rem;
+  align-items: center;
+  gap: 0.8rem;
+
+  padding: 3.5rem 1.25rem;
+  text-align: center;
+
   background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  text-decoration: none;
-  color: inherit;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-lg);
 }
 
-.stat--link:hover {
-  border-color: var(--accent);
-  background: var(--accent-soft);
+.state__title {
+  margin: 0;
+  font-weight: 550;
 }
 
-.stat__value {
-  font-size: 1.5rem;
-  font-weight: 600;
-  letter-spacing: -0.02em;
-}
-
-.stat__label {
-  font-size: 0.8125rem;
+.state__description {
+  margin: 0;
+  max-width: 30rem;
   color: var(--text-muted);
+  font-size: 0.9rem;
 }
 
-/* ------------------------------------------------------------------- modal */
+/* ==========================================================================
+   modal
+   ========================================================================== */
 
 .modal__backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(16, 24, 40, 0.45);
+  z-index: 100;
+
   display: grid;
   place-items: center;
   padding: 1.25rem;
-  z-index: 100;
+
+  background: rgb(2 6 23 / 0.55);
+  backdrop-filter: blur(3px);
+
+  animation: fade-in 160ms var(--ease);
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
 }
 
 .modal {
   width: 100%;
-  max-width: 26rem;
+  max-width: 27rem;
+  padding: 1.6rem;
+
   background: var(--surface);
-  border-radius: var(--radius);
-  box-shadow: 0 12px 32px rgba(16, 24, 40, 0.2);
-  padding: 1.5rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+
+  animation: modal-in 200ms var(--ease);
+}
+
+@keyframes modal-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.975);
+  }
 }
 
 .modal__title {
-  margin: 0 0 0.75rem;
-  font-size: 1.05rem;
+  margin: 0 0 0.7rem;
+  font-size: 1.1rem;
 }
 
 .modal__body {
-  margin: 0 0 1.25rem;
-  color: var(--text-muted);
+  margin: 0 0 1.5rem;
+  color: var(--text-secondary);
   font-size: 0.925rem;
+  line-height: 1.6;
 }
 
 .modal__actions {
   display: flex;
   justify-content: flex-end;
-  gap: 0.5rem;
+  gap: 0.55rem;
+}
+
+/* ==========================================================================
+   utility
+   ========================================================================== */
+
+/* Visible to assistive technology, not to the eye. Used for icon-only
+   controls that still need a name. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+.icon-btn {
+  display: inline-grid;
+  place-items: center;
+
+  width: 2.15rem;
+  height: 2.15rem;
+
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-secondary);
+
+  cursor: pointer;
+  transition:
+    background-color var(--fast) var(--ease),
+    color var(--fast) var(--ease);
+}
+
+.icon-btn:hover {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+.icon-btn svg {
+  width: 1.15rem;
+  height: 1.15rem;
+}
+
+.count-pill {
+  padding: 0.25rem 0.7rem;
+
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+
+  font-size: 0.8125rem;
+  font-weight: 550;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ==========================================================================
+   theme toggle
+   ========================================================================== */
+
+.theme-toggle {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+}
+
+.theme-toggle__option {
+  display: grid;
+  place-items: center;
+
+  width: 1.85rem;
+  height: 1.85rem;
+
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-muted);
+
+  cursor: pointer;
+  transition:
+    background-color var(--fast) var(--ease),
+    color var(--fast) var(--ease);
+}
+
+.theme-toggle__option:hover {
+  color: var(--text);
+}
+
+.theme-toggle__option--active {
+  background: var(--surface);
+  color: var(--accent);
+  box-shadow: var(--shadow-sm);
+}
+
+.theme-toggle__option svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+/* ==========================================================================
+   app shell — sidebar
+   ========================================================================== */
+
+.shell {
+  display: grid;
+  grid-template-columns: 15.5rem 1fr;
+  min-height: 100vh;
+}
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+
+  /* Sticky rather than fixed: it participates in the grid, so the main column
+     does not need a matching margin that would drift out of sync. */
+  position: sticky;
+  top: 0;
+  height: 100vh;
+
+  padding: 1rem 0.85rem;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+}
+
+.sidebar__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.4rem 0.5rem 1.35rem;
+}
+
+.wordmark {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+
+  font-size: 1.02rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text);
+  text-decoration: none;
+}
+
+/* A drawn mark rather than an image: nothing to load, no request, and it
+   scales with the type beside it. */
+.wordmark__mark {
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 8px;
+  background: linear-gradient(135deg, var(--indigo-400), var(--indigo-600));
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.25), var(--shadow-sm);
+}
+
+.sidebar__close {
+  display: none;
+}
+
+.nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.nav__link {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+
+  padding: 0.55rem 0.7rem;
+
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  text-align: left;
+  text-decoration: none;
+
+  transition:
+    color var(--fast) var(--ease),
+    background-color var(--fast) var(--ease);
+}
+
+.nav__link svg {
+  width: 1.05rem;
+  height: 1.05rem;
+  flex-shrink: 0;
+  opacity: 0.75;
+}
+
+.nav__link:hover {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+.nav__link--active {
+  background: var(--accent-soft);
+  color: var(--accent-text);
+  font-weight: 600;
+}
+
+.nav__link--active svg {
+  opacity: 1;
+}
+
+.nav__link--action {
+  width: 100%;
+  cursor: pointer;
+}
+
+.sidebar__foot {
+  margin-top: auto;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+}
+
+.user-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 0.7rem 0.75rem;
+}
+
+.user-chip__text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.user-chip__name {
+  font-size: 0.875rem;
+  font-weight: 600;
+
+  /* The sidebar is a fixed width, so a long name has to be truncated rather
+     than allowed to push the layout around. */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.avatar {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+
+  width: 2rem;
+  height: 2rem;
+
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--indigo-400), var(--indigo-600));
+  color: #fff;
+
+  font-size: 0.72rem;
+  font-weight: 650;
+  user-select: none;
+}
+
+.avatar--lg {
+  width: 3.25rem;
+  height: 3.25rem;
+  font-size: 1.05rem;
+}
+
+.avatar--xl {
+  width: 4.5rem;
+  height: 4.5rem;
+  font-size: 1.4rem;
+}
+
+.sidebar__scrim {
+  display: none;
+}
+
+/* ==========================================================================
+   app shell — main column
+   ========================================================================== */
+
+.shell__body {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+
+  position: sticky;
+  top: 0;
+  z-index: 30;
+
+  padding: 0.85rem 1.5rem;
+  min-height: 4rem;
+
+  background: color-mix(in srgb, var(--bg) 82%, transparent);
+  border-bottom: 1px solid var(--border);
+  backdrop-filter: saturate(150%) blur(10px);
+}
+
+.topbar__menu {
+  display: none;
+  flex-shrink: 0;
+}
+
+.topbar__text {
+  min-width: 0;
+}
+
+.topbar__title {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 650;
+
+  /* The bar is a fixed height, so a long title truncates rather than
+     wrapping and shoving the actions out of alignment. */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.topbar__description {
+  margin: 0.1rem 0 0;
+  font-size: 0.825rem;
+  color: var(--text-muted);
+
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Empty until a page portals something in, so it must not claim space or
+   push the theme toggle around when unused. */
+.topbar__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-left: auto;
+}
+
+.topbar__actions:empty {
+  display: none;
+}
+
+.topbar__actions:empty + .theme-toggle {
+  margin-left: auto;
+}
+
+/* No max-width and no centring. Capped and centred, the content drifted away
+   from the sidebar and left a gap on the right, and it no longer lined up with
+   the topbar title above it. Matching the topbar's horizontal padding keeps
+   the two in one column. */
+.shell__main {
+  flex: 1;
+  width: 100%;
+  padding: 1.5rem 1.5rem 4rem;
+}
+
+/* ==========================================================================
+   page header
+   ========================================================================== */
+
+.page-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+
+  margin-bottom: 1.85rem;
+  padding-bottom: 1.15rem;
+  border-bottom: 1px solid var(--border);
+}
+
+/* min-width 0 so a long title wraps inside the flex row rather than pushing
+   the actions off the edge. */
+.page-header__text {
+  min-width: 0;
+}
+
+.page-header__title {
+  margin: 0 0 0.25rem;
+  font-size: 1.6rem;
+}
+
+.page-header__description {
+  margin: 0;
+  max-width: 46rem;
+  color: var(--text-secondary);
+  font-size: 0.925rem;
+}
+
+.page-header__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+/* ==========================================================================
+   layout helpers
+   ========================================================================== */
+
+/* Identity beside detail, rather than one long list. The identity is glanced
+   at; the fields are read. Different jobs, different weight. */
+.identity {
+  display: grid;
+  grid-template-columns: 13rem 1fr;
+  gap: 1.75rem;
+  align-items: start;
+}
+
+.identity__aside {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+
+  padding: 1.25rem 1rem;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  text-align: center;
+}
+
+.identity__name {
+  margin: 0;
+  font-weight: 650;
+  font-size: 0.975rem;
+}
+
+.identity__body {
+  min-width: 0;
+}
+
+.split {
+  display: grid;
+  grid-template-columns: 17rem 1fr;
+  gap: 1.35rem;
+  align-items: start;
+}
+
+.profile-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.7rem;
+  text-align: center;
+}
+
+.profile-card__name {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 650;
+}
+
+.profile-card__meta {
+  margin: 0.35rem 0 0;
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+}
+
+/* Avatar, name and email as one unit inside a table cell. Two columns of
+   text at the same weight makes a wide table harder to scan, not easier. */
+.person {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+}
+
+.person__text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.person__name {
+  font-weight: 550;
+}
+
+.person__email {
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+}
+
+.stat__arrow {
+  position: absolute;
+  top: 0.9rem;
+  right: 0.9rem;
+
+  opacity: 0;
+  transform: translateX(-4px);
+  color: var(--accent);
+
+  transition:
+    opacity var(--normal) var(--ease),
+    transform var(--normal) var(--ease);
+}
+
+.stat__arrow svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.stat {
+  position: relative;
+}
+
+.stat--link:hover .stat__arrow {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.stat__value--success {
+  color: var(--success);
+}
+
+.stats--loading {
+  display: flex;
+  justify-content: center;
+  padding: 1.5rem;
+}
+
+/* ==========================================================================
+   auth — split layout
+   ========================================================================== */
+
+.auth {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  min-height: 100vh;
+}
+
+.auth__form-side {
+  position: relative;
+  display: grid;
+  place-items: center;
+  padding: 2rem 1.5rem;
+}
+
+.auth__toggle {
+  position: absolute;
+  top: 1.35rem;
+  right: 1.35rem;
+}
+
+.auth__card {
+  width: 100%;
+  max-width: 22rem;
+}
+
+.auth__mark {
+  display: block;
+  width: 2.25rem;
+  height: 2.25rem;
+  margin-bottom: 1.35rem;
+  border-radius: 10px;
+}
+
+.auth__title {
+  margin: 0 0 0.35rem;
+  font-size: 1.65rem;
+}
+
+.auth__subtitle {
+  margin: 0 0 1.85rem;
+  color: var(--text-secondary);
+  font-size: 0.925rem;
+}
+
+.auth__foot {
+  margin: 1.5rem 0 0;
+  padding-top: 1.35rem;
+  border-top: 1px solid var(--border);
+
+  text-align: center;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
+
+.auth__brand {
+  position: relative;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+
+  padding: 3rem;
+  background:
+    radial-gradient(38rem 24rem at 75% 15%, rgb(129 140 248 / 0.4), transparent 65%),
+    linear-gradient(150deg, var(--indigo-600), var(--indigo-700) 55%, var(--slate-900));
+  color: #fff;
+}
+
+.auth__brand-inner {
+  max-width: 24rem;
+}
+
+.auth__brand-eyebrow {
+  margin: 0 0 0.85rem;
+  font-size: 0.8rem;
+  font-weight: 650;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  opacity: 0.75;
+}
+
+.auth__brand-title {
+  margin: 0 0 2rem;
+  font-size: 2rem;
+  font-weight: 650;
+  line-height: 1.25;
+  letter-spacing: -0.025em;
+}
+
+.auth__brand-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.auth__brand-list li {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  font-size: 0.925rem;
+  opacity: 0.92;
+}
+
+.auth__brand-list svg {
+  width: 1.05rem;
+  height: 1.05rem;
+  flex-shrink: 0;
+  opacity: 0.85;
+}
+
+/* ==========================================================================
+   responsive
+   ========================================================================== */
+
+@media (max-width: 60rem) {
+  /* The brand panel is hidden rather than stacked. Stacked, it pushes the
+     form below the fold and puts decoration ahead of the task. */
+  .auth {
+    grid-template-columns: 1fr;
+  }
+
+  .auth__brand {
+    display: none;
+  }
+}
+
+@media (max-width: 56rem) {
+  .identity,
+  .split {
+    grid-template-columns: 1fr;
+  }
+
+  .identity__aside,
+  .profile-card {
+    flex-direction: row;
+    align-items: center;
+    text-align: left;
+    gap: 1rem;
+  }
+
+  .identity__aside .badge,
+  .profile-card .badge {
+    margin-left: auto;
+  }
+}
+
+/* Below this the sidebar becomes a drawer. */
+@media (max-width: 52rem) {
+  .shell {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 90;
+
+    width: 16rem;
+    transform: translateX(-100%);
+    transition: transform var(--normal) var(--ease);
+    box-shadow: var(--shadow-lg);
+  }
+
+  .shell--nav-open .sidebar {
+    transform: translateX(0);
+  }
+
+  .sidebar__close {
+    display: inline-grid;
+  }
+
+  .sidebar__scrim {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 80;
+    background: rgb(2 6 23 / 0.5);
+    animation: fade-in 160ms var(--ease);
+  }
+
+  .topbar__menu {
+    display: inline-grid;
+  }
+
+  .topbar {
+    padding: 0.6rem 1rem;
+  }
+
+  .shell__main {
+    padding: 1.5rem 1rem 3rem;
+  }
+
+  /* min-width 0 so a long title wraps inside the flex row rather than pushing
+   the actions off the edge. */
+.page-header__text {
+  min-width: 0;
+}
+
+.page-header__title {
+    font-size: 1.4rem;
+  }
+}
+
+@media (max-width: 40rem) {
+  .detail-list {
+    grid-template-columns: 1fr;
+    gap: 0.2rem;
+  }
+
+  .detail-list dd {
+    margin-bottom: 0.85rem;
+  }
+
+  .stats {
+    grid-template-columns: repeat(auto-fit, minmax(7.5rem, 1fr));
+  }
+
+  .stat__value {
+    font-size: 1.4rem;
+  }
+
+  .page-header {
+    align-items: flex-start;
+  }
 }

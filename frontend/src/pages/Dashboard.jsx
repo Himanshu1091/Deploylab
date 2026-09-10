@@ -5,6 +5,8 @@ import { useAuth } from '../hooks/useAuth.js';
 import { getStats, getTeam } from '../api/users.api.js';
 import { RoleBadge } from '../components/ui/Badge.jsx';
 import { Spinner } from '../components/ui/Spinner.jsx';
+import { usePageHeader } from '../context/PageHeaderContext.jsx';
+import { initials } from '../utils/initials.js';
 import { formatDate } from '../utils/formatDate.js';
 
 const ROLE_SUMMARY = {
@@ -13,10 +15,10 @@ const ROLE_SUMMARY = {
   employee: 'You can view and edit your own profile.',
 };
 
-function StatCard({ label, value, to }) {
+function StatCard({ label, value, to, tone = 'default' }) {
   const content = (
     <>
-      <span className="stat__value">{value}</span>
+      <span className={`stat__value stat__value--${tone}`}>{value}</span>
       <span className="stat__label">{label}</span>
     </>
   );
@@ -24,6 +26,11 @@ function StatCard({ label, value, to }) {
   return to ? (
     <Link to={to} className="stat stat--link">
       {content}
+      <span className="stat__arrow" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M5 12h14M13 6l6 6-6 6" />
+        </svg>
+      </span>
     </Link>
   ) : (
     <div className="stat">{content}</div>
@@ -58,7 +65,14 @@ function RoleStats({ role }) {
 
   if (role === 'employee') return null;
   if (failed) return <p className="muted">Statistics are unavailable right now.</p>;
-  if (!stats) return <Spinner label="Loading statistics" />;
+
+  if (!stats) {
+    return (
+      <div className="stats stats--loading">
+        <Spinner label="Loading statistics" />
+      </div>
+    );
+  }
 
   if (role === 'manager') {
     return (
@@ -71,7 +85,7 @@ function RoleStats({ role }) {
   return (
     <div className="stats">
       <StatCard label="Total users" value={stats.total} to="/admin/users" />
-      <StatCard label="Active" value={stats.active} />
+      <StatCard label="Active" value={stats.active} tone="success" />
       <StatCard label="Admins" value={stats.byRole.admin} />
       <StatCard label="Managers" value={stats.byRole.manager} />
       <StatCard label="Employees" value={stats.byRole.employee} />
@@ -83,6 +97,8 @@ export default function Dashboard() {
   const { user } = useAuth();
   const location = useLocation();
 
+  usePageHeader(`Welcome, ${user.name.split(' ')[0]}`, ROLE_SUMMARY[user.role]);
+
   // Set by RoleRoute when it turns someone away from a page they cannot access.
   const notice = location.state?.notice;
 
@@ -90,36 +106,38 @@ export default function Dashboard() {
     <div className="page">
       {notice && <p className="banner banner--warning">{notice}</p>}
 
-      <h1 className="page__title">Welcome, {user.name.split(' ')[0]}</h1>
-      <p className="page__lead">{ROLE_SUMMARY[user.role]}</p>
-
       <RoleStats role={user.role} />
 
-      <section className="card">
-        <h2 className="card__title">Your account</h2>
+      {/* Identity panel beside the detail list, rather than one long list.
+          The identity is the thing you glance at; the fields are the thing
+          you read, and they deserve different weight. */}
+      <section className="card identity">
+        <div className="identity__aside">
+          <span className="avatar avatar--lg" aria-hidden="true">
+            {initials(user.name)}
+          </span>
+          <p className="identity__name">{user.name}</p>
+          <RoleBadge role={user.role} />
+        </div>
 
-        <dl className="detail-list">
-          <dt>Name</dt>
-          <dd>{user.name}</dd>
+        <div className="identity__body">
+          <h2 className="card__title">Your account</h2>
 
-          <dt>Email</dt>
-          <dd>{user.email}</dd>
+          <dl className="detail-list">
+            <dt>Email</dt>
+            <dd>{user.email}</dd>
 
-          <dt>Role</dt>
-          <dd>
-            <RoleBadge role={user.role} />
-          </dd>
+            {user.manager && (
+              <>
+                <dt>Manager</dt>
+                <dd>{user.manager.name}</dd>
+              </>
+            )}
 
-          {user.manager && (
-            <>
-              <dt>Manager</dt>
-              <dd>{user.manager.name}</dd>
-            </>
-          )}
-
-          <dt>Member since</dt>
-          <dd>{formatDate(user.createdAt)}</dd>
-        </dl>
+            <dt>Member since</dt>
+            <dd>{formatDate(user.createdAt)}</dd>
+          </dl>
+        </div>
       </section>
     </div>
   );

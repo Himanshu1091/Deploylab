@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth.js';
 import { Button } from '../components/ui/Button.jsx';
 import { Input } from '../components/ui/Input.jsx';
+import { AuthLayout } from '../components/layout/AuthLayout.jsx';
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -83,14 +84,18 @@ export default function Register() {
   }
 
   return (
-    <div className="auth">
-      <div className="auth__card">
-        <h1 className="auth__title">Create account</h1>
-        <p className="auth__subtitle">New accounts start with the employee role.</p>
+    <AuthLayout
+      title="Create account"
+      subtitle="New accounts start with the employee role."
+      footer={
+        <>
+          Already have an account? <Link to="/login">Log in</Link>
+        </>
+      }
+    >
+      {formError && <p className="banner banner--error">{formError}</p>}
 
-        {formError && <p className="banner banner--error">{formError}</p>}
-
-        <form onSubmit={handleSubmit} noValidate>
+      <form onSubmit={handleSubmit} noValidate>
           <Input
             label="Name"
             name="name"
@@ -138,12 +143,7 @@ export default function Register() {
           <Button type="submit" loading={submitting} className="btn--full">
             {submitting ? 'Creating account…' : 'Create account'}
           </Button>
-        </form>
-
-        <p className="auth__foot">
-          Already have an account? <Link to="/login">Log in</Link>
-        </p>
-      </div>
-    </div>
+      </form>
+    </AuthLayout>
   );
 }

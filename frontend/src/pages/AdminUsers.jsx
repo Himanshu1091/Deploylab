@@ -8,6 +8,8 @@ import { StatusBadge } from '../components/ui/Badge.jsx';
 import { Modal } from '../components/ui/Modal.jsx';
 import { TableScroll } from '../components/ui/Table.jsx';
 import { EmptyState, ErrorState, LoadingState } from '../components/ui/States.jsx';
+import { usePageHeader, TopbarActions } from '../context/PageHeaderContext.jsx';
+import { initials } from '../utils/initials.js';
 import { formatDate } from '../utils/formatDate.js';
 
 const ROLES = ['admin', 'manager', 'employee'];
@@ -25,6 +27,9 @@ export default function AdminUsers() {
   const [managers, setManagers] = useState([]);
   const [busyRow, setBusyRow] = useState(null);
   const [confirmation, setConfirmation] = useState(null);
+
+  // Before the early returns below, or the hook order changes between renders.
+  usePageHeader('Users', 'Manage roles, managers, and account access.');
 
   // Debounced, so typing a name does not fire a request per keystroke.
   useEffect(() => {
@@ -130,7 +135,9 @@ export default function AdminUsers() {
       title: 'Deactivate account',
       body: `Deactivate ${row.name}? They will be signed out immediately and unable to log in.`,
       confirmLabel: 'Deactivate',
-      confirmVariant: 'primary',
+      // Destructive, so it gets the destructive colour. Wording alone asks
+      // people to read carefully exactly when they are clicking quickly.
+      confirmVariant: 'danger',
       run: () => apply(row.id, () => usersApi.changeStatus(row.id, false), 'Account deactivated.'),
     });
   }
@@ -153,8 +160,9 @@ export default function AdminUsers() {
 
   return (
     <div className="page">
-      <h1 className="page__title">Users</h1>
-      <p className="page__lead">Manage roles, managers, and account access.</p>
+      <TopbarActions>
+        <span className="count-pill">{pagination.total} total</span>
+      </TopbarActions>
 
       <div className="toolbar">
         <input
@@ -189,8 +197,7 @@ export default function AdminUsers() {
             <table className="table">
               <thead>
                 <tr>
-                  <th scope="col">Name</th>
-                  <th scope="col">Email</th>
+                  <th scope="col">User</th>
                   <th scope="col">Role</th>
                   <th scope="col">Manager</th>
                   <th scope="col">Status</th>
@@ -205,12 +212,23 @@ export default function AdminUsers() {
 
                   return (
                     <tr key={row.id} className={isBusy ? 'row--busy' : undefined}>
+                      {/* Name and email in one cell, stacked. Two columns of
+                          text at the same weight makes a wide table harder to
+                          scan, not easier. */}
                       <td>
-                        {row.name}
-                        {isSelf && <span className="tag">you</span>}
+                        <div className="person">
+                          <span className="avatar" aria-hidden="true">
+                            {initials(row.name)}
+                          </span>
+                          <div className="person__text">
+                            <span className="person__name">
+                              {row.name}
+                              {isSelf && <span className="tag">you</span>}
+                            </span>
+                            <span className="person__email">{row.email}</span>
+                          </div>
+                        </div>
                       </td>
-
-                      <td className="cell--muted">{row.email}</td>
 
                       <td>
                         <select

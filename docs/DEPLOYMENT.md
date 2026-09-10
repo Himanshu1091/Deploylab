@@ -79,13 +79,40 @@ Things that commonly cost money on an otherwise "free" setup:
 
 **Do this immediately after the account exists, before launching anything:**
 
-- [ ] Enable MFA on the root account
+- [x] Enable MFA on the root account
+- [x] Confirm no root access keys exist
 - [ ] Create an IAM user for daily use; stop using root
-- [ ] Billing → Budgets → create a zero-spend or low-threshold budget with an email alert
+- [x] Billing → Budgets → a low-threshold budget with an email alert
 - [ ] Billing preferences → turn on free tier usage alerts
 
 A budget alert does not stop charges. It tells you they started. That is still
 the difference between noticing in a day and noticing on a statement.
+
+### What was actually set up
+
+**Budget** — `deploylab-monthly`, $20/month recurring, email alert at 80% of
+actual spend. Expected draw for one micro instance plus a small volume and one
+public IPv4 address is roughly $10–15, so a trigger means something changed:
+an extra instance left running, or a resource forgotten.
+
+No budget *action* is attached, deliberately. Actions can stop EC2 instances
+automatically when a threshold trips, which on a $20 budget would take the site
+down over a routine fluctuation. The point is to be told, not to have production
+halted on your behalf.
+
+**Root MFA** — virtual TOTP via an authenticator app. Root cannot be constrained
+by any policy: it can delete everything, change billing, and close the account,
+and a payment method is attached. Save the secret key shown beside the QR code
+somewhere safe; without it, recovering a root account means identity verification
+with AWS support.
+
+**Root access keys** — none, and it should stay that way. Long-lived root
+credentials are the thing that most often leaks in AWS incidents, and nothing
+here needs them.
+
+**An IAM user for daily work** is the remaining best practice and was skipped.
+Worth doing on any account that matters. On a solo learning account it is
+meaningfully less valuable than the MFA, and it should not block getting started.
 
 ---
 
@@ -666,6 +693,32 @@ redeploys through the normal path, leaving history and the server in agreement.
 
 **Manual, for an emergency.** See **Rollback** below. Follow it with a real
 revert, or the next deploy puts the broken version back.
+
+---
+
+## 19. Log Rotation
+
+pm2 writes to `~/.pm2/logs/` and never truncates. On a box this size an error
+loop could fill the disk, and a full disk on Linux fails in several directions at
+once: `apt` breaks mid-upgrade, nginx refuses to start, pm2 cannot write.
+
+```bash
+pm2 install pm2-logrotate
+
+pm2 set pm2-logrotate:max_size 10M
+pm2 set pm2-logrotate:retain 7
+pm2 set pm2-logrotate:compress true
+pm2 set pm2-logrotate:rotateInterval '0 0 * * *'
+
+pm2 save
+```
+
+Rotates when a file reaches 10 MB or at midnight, whichever comes first, keeping
+seven compressed generations — roughly 70 MB before compression, against 9.6 GB
+free.
+
+The module is restored by `pm2 resurrect` on boot along with the app, so it needs
+no separate startup handling.
 
 ---
 

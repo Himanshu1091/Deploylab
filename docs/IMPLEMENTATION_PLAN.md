@@ -22,7 +22,7 @@ Tick boxes as work completes. Phases 1–8 build the application; phases 9–14 
 - [x] Phase 9 — Server provisioning
 - [ ] Phase 10 — nginx reverse proxy
 - [ ] Phase 11 — Domain and HTTPS
-- [ ] Phase 12 — CI/CD
+- [x] Phase 12 — CD
 - [ ] Phase 13 — Docker (optional)
 - [ ] Phase 14 — Observability and backup (optional)
 
@@ -328,7 +328,7 @@ live in [DEPLOYMENT.md](DEPLOYMENT.md); this is the checklist.
 
 - [x] AWS account created — on the credits-based free plan, $100 expiring 2027-03-09
 - [x] MFA on the root account; an IAM user for daily work
-- [ ] Budget alert configured
+- [x] Budget alert configured - `deploylab-monthly`, $20/month, email at 80% actual
 - [ ] Free tier usage alerts enabled
 - [x] Free tier terms checked — this is the credits model, not the old 12-month tier, so the risk is burning the balance rather than a surprise invoice
 
@@ -449,7 +449,7 @@ using the wrong username, since Ubuntu AMIs use `ubuntu` rather than `ec2-user`.
 
 ---
 
-## Phase 12 — CD
+## Phase 12 — CD ✅
 
 **Goal:** merging to `main` deploys automatically.
 
@@ -499,7 +499,7 @@ CI already exists from Phase 1 — `.github/workflows/ci.yml` builds the client 
 
 ## Phase 14 — Observability and Backup (optional)
 
-- [ ] `pm2-logrotate` installed and configured
+- [x] `pm2-logrotate` installed and configured - 10M, daily, 7 compressed generations
 - [ ] Uptime monitoring on `/api/health` — UptimeRobot or similar
 - [ ] `pm2 monit` reviewed under load
 - [ ] Atlas automated backup confirmed
@@ -560,3 +560,8 @@ Record dated entries here as work proceeds. The mistakes are the actual curricul
 | 2026-09-09 | 9 | Production and development currently share one Atlas database. A local seed or delete now reaches production data. Acceptable while learning; a separate database name is the fix. |
 | 2026-09-09 | 9 | Health returned an empty body when queried immediately after reboot, because Mongoose had not finished connecting. Not a fault - reporting that state is what the endpoint is for. |
 | 2026-09-09 | 9 | Associating an Elastic IP to a running instance also changes the server's outbound address, which severed every open Atlas connection. Health reported 503 with db: disconnected for about thirty seconds, then recovered on its own - Mongoose reconnects, and the health endpoint is what made the moment legible rather than mysterious. |
+| 2026-09-10 | 12 | The home IP rotated overnight and SSH stopped working, while the site stayed up on port 80. Second lockout in a day from the same allowlist. It never kept an attacker out - key-only auth does that - so port 22 was opened and the rule dropped. |
+| 2026-09-10 | 12 | First deploy failed on `Host key verification failed`. The key matched the server exactly, so the fault was in the copy into the secret box: invisible, and slow to debug at a minute per run. Moved the host key into the workflow file, where it is reviewable in a diff and cannot be mis-pasted. A host public key is not secret. |
+| 2026-09-10 | 12 | Deploy fired on the merge that introduced the workflow, contrary to my expectation that workflow_run needs the file present on main beforehand. |
+| 2026-09-10 | 12 | Branch protection deliberately skipped - solo project. Lower risk than it sounds, because the deploy job gates on the CI conclusion: a red build cannot reach the server even if the merge goes through. |
+| 2026-09-10 | 14 | pm2 logs were unbounded. A full disk breaks apt, nginx and pm2 simultaneously, so this was worth doing before it mattered rather than after. |

@@ -674,13 +674,48 @@ resolves it.
 
 ---
 
-## 17. TLS
+## 17. TLS — deferred
 
-_Phase 11._
+**Not done.** The site runs over plain HTTP on a bare IP address.
+
+Let's Encrypt issues certificates for domain names, and no domain was registered
+for this project. A free subdomain — DuckDNS, or an IP-derived one like
+`sslip.io` — would be enough to get a real certificate.
+
+### What running without it costs
+
+The session cookie cannot carry `Secure`, because browsers silently discard
+`Secure` cookies delivered over plain HTTP. `COOKIE_SECURE=false` is therefore
+set on the server, and session tokens cross the network in plaintext. Anyone on
+the network path — shared wifi, a compromised router — can copy one and act as
+that user until it expires.
+
+That is an accepted trade for a learning deployment holding disposable data. It
+would not be acceptable with anything real.
+
+The failure this caused is worth reading, because it did not look like a cookie
+problem: login appeared to succeed, an employee's dashboard worked fine, and an
+admin was thrown back to the login screen seconds later with "session expired".
+Same cause, two unrelated-looking symptoms. See the Troubleshooting Log.
+
+### What it would take
 
 ```bash
-# placeholder
+sudo apt install -y certbot python3-certbot-nginx
+sudo certbot --nginx -d <your-subdomain>
+sudo certbot renew --dry-run
 ```
+
+Then, in order — TLS first, flag second:
+
+1. Confirm HTTPS works and HTTP redirects to it
+2. Remove `COOKIE_SECURE=false` from `backend/.env` so it follows `NODE_ENV`
+3. Restore `upgradeInsecureRequests` in the Helmet CSP in `backend/src/app.js`,
+   deliberately omitted in Phase 8 because it breaks testing over plain HTTP
+4. `pm2 reload deploylab` and log in to confirm the session sticks
+
+Setting the flag before TLS works is the trap: login returns `200`, the cookie is
+dropped, and the failure surfaces somewhere else entirely.
 
 ---
 

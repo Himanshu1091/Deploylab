@@ -422,7 +422,9 @@ using the wrong username, since Ubuntu AMIs use `ubuntu` rather than `ec2-user`.
 
 **Done when:** `http://<server-ip>` loads the app, deep links refresh correctly, `/api/health` responds through the proxy, and port 5000 is unreachable from outside.
 
-**Verified from the public internet, 2026-09-09 — http://13.201.93.125**
+**Verified from the public internet, 2026-09-09** — at `13.201.93.125`, the
+auto-assigned address in use at the time. The site moved to the Elastic IP
+`3.110.17.203` later the same day.
 
 | Check | Result |
 |---|---|

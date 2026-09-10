@@ -722,6 +722,56 @@ no separate startup handling.
 
 ---
 
+## 20. Uptime Monitoring
+
+Monitoring has to run **somewhere else**. A cron job on the server cannot tell
+you the server is down, which is the failure that matters most.
+
+**UptimeRobot**, free tier, checking `/api/health` every five minutes:
+
+| Field | Value |
+|---|---|
+| Monitor Type | Keyword |
+| URL | `http://<elastic-ip>/api/health` |
+| Keyword Type | Keyword **not** exists |
+| Keyword | `"db":"connected"` |
+| Interval | 5 minutes |
+
+Keyword rather than plain HTTP. A plain check only sees the status code — which
+would work here, since health returns `503` when the database is unreachable —
+but keyword matching also catches a `200` that reports something wrong. It checks
+the answer, not merely that someone answered.
+
+This is the payoff for having health report database state instead of returning
+`200` because the process is alive. A port check would have called the app
+healthy throughout the thirty seconds it spent disconnected from Atlas after the
+Elastic IP was attached.
+
+---
+
+## 21. Backups — Read This
+
+**Atlas M0 has no automated backups.** Continuous backup begins at M10, which is
+a paid tier. Nothing here is snapshotting the database.
+
+If a collection is dropped, the data is gone. That is not hypothetical — every
+account in this deployment was deleted at one point, deliberately, and the only
+reason it did not matter is that the data was disposable.
+
+That is an acceptable position for a learning project, and it is written down
+here so it is a decision rather than an assumption.
+
+Before anything real goes in this database, the minimum is:
+
+```bash
+mongodump --uri="$MONGODB_URI" --archive=deploylab-$(date +%F).gz --gzip
+```
+
+on a schedule, stored off the instance — and a restore you have actually
+rehearsed. An untested backup is a belief, not a backup.
+
+---
+
 ## Routine Operations
 
 | Task | Command |

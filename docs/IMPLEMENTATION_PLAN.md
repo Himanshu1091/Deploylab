@@ -500,11 +500,11 @@ CI already exists from Phase 1 — `.github/workflows/ci.yml` builds the client 
 ## Phase 14 — Observability and Backup (optional)
 
 - [x] `pm2-logrotate` installed and configured - 10M, daily, 7 compressed generations
-- [ ] Uptime monitoring on `/api/health` — UptimeRobot or similar
+- [x] Uptime monitoring on `/api/health` - UptimeRobot keyword monitor, 5-minute interval, email alert
 - [ ] `pm2 monit` reviewed under load
-- [ ] Atlas automated backup confirmed
-- [ ] A `mongodump` restore rehearsed at least once
-- [ ] Disk and memory alerts configured
+- [x] Atlas backup situation confirmed - **M0 has none.** Continuous backup starts at M10. Documented as an accepted risk for disposable data
+- [ ] A `mongodump` restore rehearsed at least once - deferred, nothing here is worth restoring
+- [ ] Disk and memory alerts configured - deferred; logs now rotate and the disk sits at 34%
 - [ ] `DEPLOYMENT.md` completed as a from-scratch runbook
 - [ ] A full rebuild rehearsed on a fresh instance using only the runbook
 
@@ -565,3 +565,6 @@ Record dated entries here as work proceeds. The mistakes are the actual curricul
 | 2026-09-10 | 12 | Deploy fired on the merge that introduced the workflow, contrary to my expectation that workflow_run needs the file present on main beforehand. |
 | 2026-09-10 | 12 | Branch protection deliberately skipped - solo project. Lower risk than it sounds, because the deploy job gates on the CI conclusion: a red build cannot reach the server even if the merge goes through. |
 | 2026-09-10 | 14 | pm2 logs were unbounded. A full disk breaks apt, nginx and pm2 simultaneously, so this was worth doing before it mattered rather than after. |
+| 2026-09-10 | 14 | Monitoring is external on purpose. A check running on the server cannot report the server being down, which is the failure that matters most. |
+| 2026-09-10 | 14 | Keyword monitoring on `\"db\":\"connected\"` rather than a plain status check. Health already returns 503 when the database is unreachable, so a status check would work, but keyword matching also catches a 200 that reports something wrong - it checks the answer, not just that something answered. |
+| 2026-09-10 | 14 | Atlas M0 has no automated backups; continuous backup begins at M10. Accepted here because the data is disposable, and written down so it stays a decision rather than an assumption. |

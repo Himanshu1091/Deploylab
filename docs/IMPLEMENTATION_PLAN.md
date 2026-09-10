@@ -328,7 +328,7 @@ live in [DEPLOYMENT.md](DEPLOYMENT.md); this is the checklist.
 
 - [x] AWS account created — on the credits-based free plan, $100 expiring 2027-03-09
 - [x] MFA on the root account; an IAM user for daily work
-- [ ] Budget alert configured
+- [x] Budget alert configured - `deploylab-monthly`, $20/month, email at 80% actual
 - [ ] Free tier usage alerts enabled
 - [x] Free tier terms checked — this is the credits model, not the old 12-month tier, so the risk is burning the balance rather than a surprise invoice
 
